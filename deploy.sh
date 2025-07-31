@@ -7,7 +7,6 @@ git checkout main
 npm run build
 
 # 3. Crea cartella temporanea per la build
-rm -rf ../deploy-tmp
 mkdir ../deploy-tmp
 cp -r dist/* ../deploy-tmp/
 
