@@ -17,19 +17,19 @@ cp -r dist/* ../deploy-tmp/
 echo "🔄 Passaggio al branch gh-pages..."
 git checkout gh-pages
 
-# # 5. Cancella tutto tranne la cartella .git
-# echo "🗑️ Pulizia della cartella gh-pages..."
-# rm -rf *
+# 5. Cancella tutto tranne la cartella .git
+echo "🗑️ Pulizia della cartella gh-pages..."
+rm -rf *
 
-# # 6. Copia i file dalla cartella temporanea nella root
-# echo "📂 Copia dei file nella cartella gh-pages..."
-# cp -r ../deploy-tmp/* .
+# 6. Copia i file dalla cartella temporanea nella root
+echo "📂 Copia dei file nella cartella gh-pages..."
+cp -r ../deploy-tmp/* .
 
-# # 7. Aggiungi, committa e pusha
-# echo "📦 Aggiunta, commit e push dei file..."
-# git add .
-# git commit -m "Deploy build automatico $(date +'%Y-%m-%d %H:%M:%S')"
-# git push origin gh-pages
+# 7. Aggiungi, committa e pusha
+echo "📦 Aggiunta, commit e push dei file..."
+git add .
+git commit -m "Deploy build automatico $(date +'%Y-%m-%d %H:%M:%S')"
+git push origin gh-pages
 
 # # 8. Torna al branch main
 # echo "🔄 Ritorno al branch main..."
