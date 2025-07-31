@@ -483,3 +483,55 @@ Se vuoi approfondire o automatizzare ulteriormente il progetto, contattami per:
 - Configurazioni avanzate di Vite
 - Miglioramenti al workflow di deploy
 - Supporto su TypeScript o moduli
+
+---
+
+## 🔄 Come tornare a una versione precedente del branch `main`
+
+Se vuoi tornare a un commit precedente nel branch `main`, puoi farlo in vari modi:
+
+### Visualizzare la lista dei commit
+
+```bash
+git log --oneline
+```
+
+Questo mostra i commit recenti con hash abbreviati e messaggi.
+
+### Passare temporaneamente a un commit specifico (detached HEAD)
+
+```bash
+git checkout <commit-hash>
+```
+
+### Tornare indietro definitivamente nel branch `main` (hard reset)
+
+⚠️ Attenzione: elimina le modifiche dopo quel commit localmente
+
+```bash
+git checkout main
+git reset --hard <commit-hash>
+```
+
+Per aggiornare anche il repository remoto (GitHub), dovrai forzare il push:
+
+```bash
+git push origin main --force
+```
+
+### Creare un nuovo branch da un commit precedente
+
+```bash
+git checkout -b nome-branch <commit-hash>
+```
+
+Questo ti permette di lavorare sul codice di quel commit senza toccare `main`.
+
+---
+
+## 💡 Consigli utili
+
+- Prima di fare un `reset --hard`, assicurati di aver salvato eventuali modifiche importanti.
+- Usa `git stash` per mettere da parte temporaneamente modifiche non committate.
+
+---
