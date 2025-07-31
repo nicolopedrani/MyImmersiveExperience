@@ -14,6 +14,8 @@ export function updateDebugPanel(currentTime: number): void {
 
   const panel = document.getElementById("debug-panel");
   if (panel) {
+    // const currentRoom = getCurrentimport { player } from "./player";
+    // import { getCurrentRoom } from "./roomManager";
     panel.innerHTML = `
       x: ${player.x}<br>
       y: ${player.y}<br>
