@@ -5,12 +5,10 @@ export function setupCanvas(map: number[][]): {
   GAME_WIDTH: number;
   GAME_HEIGHT: number;
 } {
-  const canvas: HTMLCanvasElement | null = document.getElementById(
+  const canvas = document.getElementById(
     "gameCanvas"
   ) as HTMLCanvasElement | null;
-  const ctx: CanvasRenderingContext2D | null = canvas
-    ? canvas.getContext("2d")
-    : null;
+  const ctx = canvas ? canvas.getContext("2d") : null;
 
   const TILE_SIZE = 64;
   const MAP_WIDTH_TILES = map[0].length;
@@ -28,14 +26,16 @@ export function setupCanvas(map: number[][]): {
 }
 
 export function scaleCanvasToWindow(canvas: HTMLCanvasElement): void {
-  const scaleX = window.innerWidth / canvas.width;
-  const scaleY = window.innerHeight / canvas.height;
-  const scale = Math.min(scaleX, scaleY);
+  // Rimuovi eventuali trasformazioni precedenti
+  canvas.style.transform = "";
+  canvas.style.position = "";
+  canvas.style.left = "";
+  canvas.style.top = "";
 
-  canvas.style.transform = `scale(${scale})`;
-  canvas.style.transformOrigin = "top left";
+  // Imposta dimensioni fisse per la canvas interna
+  // Il CSS si occuperà del responsive
+  canvas.width = canvas.width; // Mantieni la larghezza interna
+  canvas.height = canvas.height; // Mantieni l'altezza interna
 
-  canvas.style.position = "absolute";
-  canvas.style.left = `${(window.innerWidth - canvas.width * scale) / 2}px`;
-  canvas.style.top = `${(window.innerHeight - canvas.height * scale) / 2}px`;
+  // Il CSS gestirà il ridimensionamento responsive
 }
