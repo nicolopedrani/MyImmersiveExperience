@@ -33,7 +33,9 @@ function gameLoop(currentTime: number): void {
   }
   requestAnimationFrame(gameLoop);
 
-  updateDebugPanel(currentTime);
+  if (import.meta.env.DEV) {
+    updateDebugPanel(currentTime);
+  }
 }
 
 function draw(
