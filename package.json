@@ -1,0 +1,18 @@
+{
+  "name": "gamedev-js",
+  "version": "1.0.0",
+  "description": "GameDev-JS/ ├── index.html <-- La tua pagina HTML ├── style.css <-- Stile del gioco ├── main.js <-- Entry point JS (modulare) ├── modules/ <-- Tutti i tuoi moduli JavaScript │ ├── assets.js │ ├── canvas.js │ ├── input.js │ ├── map.js │ ├── player.js │ └── sprites.js ├── assets/ <-- Tutti gli asset di gioco (immagini) │ ├── Grass_Middle.png │ ├── Path_Middle.png │ ├── Oak_Tree.png │ └── Player.png └── README.md <-- (opzionale) per spiegare la struttura e l’uso del progetto",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^7.0.6"
+  }
+}
