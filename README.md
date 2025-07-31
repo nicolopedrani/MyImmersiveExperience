@@ -1,22 +1,26 @@
 # MyImmersiveExperience
 
 MyImmersiveExperience/
-├── index.html <-- La tua pagina HTML
-├── style.css <-- Stile del gioco
-├── main.js <-- Entry point JS (modulare)
-├── modules/ <-- Tutti i tuoi moduli JavaScript
-│ ├── assets.js
-│ ├── canvas.js
-│ ├── input.js
-│ ├── map.js
-│ ├── player.js
-│ └── sprites.js
-├── assets/ <-- Tutti gli asset di gioco (immagini)
+├── index.html <-- HTML di ingresso (resta nella root)
+├── style.css <-- (opzionale) se non vuoi modularizzare anche lo stile
+├── src/ <-- 📦 tutto il codice sorgente TypeScript
+│ ├── main.ts <-- Entry point
+│ ├── modules/ <-- Moduli TS
+│ │ ├── assets.ts
+│ │ ├── canvas.ts
+│ │ ├── input.ts
+│ │ ├── map.ts
+│ │ ├── player.ts
+│ │ └── sprites.ts
+├── assets/ <-- Immagini o file statici usati nel gioco
 │ ├── Grass_Middle.png
 │ ├── Path_Middle.png
 │ ├── Oak_Tree.png
 │ └── Player.png
-└── README.md <-- (opzionale) per spiegare la struttura e l’uso del progetto
+├── deploy.sh
+├── vite.config.ts
+├── package.json
+└── README.md
 
 https://www.piskelapp.com/p/create/sprite/
 
@@ -325,3 +329,157 @@ https://tuo-username.github.io/nome-repo/
 ---
 
 ✅ Questo processo separa perfettamente il codice sorgente dalla versione pubblicata del gioco e ti consente di mantenere ordine e controllo sul progetto. Se preferisci, in futuro potresti anche automatizzare tutto con uno script `npm run deploy`.
+
+## 📝 Documentazione completa del progetto
+
+Questo progetto contiene un semplice gioco sviluppato in JavaScript modulare con supporto TypeScript e deploy automatico su GitHub Pages.
+
+---
+
+### Setup e sviluppo locale
+
+1. Inizializza il progetto:
+
+```bash
+npm init -y
+```
+
+2. Installa Vite come dipendenza di sviluppo:
+
+```bash
+npm install vite --save-dev
+```
+
+3. Aggiungi gli script di sviluppo e build in `package.json`:
+
+```json
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview",
+  "deploy": "./deploy.sh"
+}
+```
+
+4. Avvia il server di sviluppo con hot reload:
+
+```bash
+npm run dev
+```
+
+---
+
+### Build di produzione
+
+Per creare la versione ottimizzata del gioco:
+
+```bash
+npm run build
+```
+
+La build viene generata nella cartella `dist/`.
+
+---
+
+### Deploy su GitHub Pages
+
+#### Passaggi principali
+
+1. Inizializza git e collega il repository GitHub (se non fatto):
+
+```bash
+git init
+git remote add origin https://github.com/tuo-username/nome-repo.git
+git branch -M main
+git push -u origin main
+```
+
+2. Crea e inizializza il branch `gh-pages`:
+
+```bash
+git checkout -b gh-pages
+git add .
+git commit -m "Inizializzazione branch gh-pages"
+git push origin gh-pages
+git checkout main
+```
+
+3. Genera la build:
+
+```bash
+npm run build
+```
+
+4. Copia la build in una cartella temporanea fuori dalla root del progetto:
+
+```bash
+mkdir ../deploy-tmp
+cp -r dist/* ../deploy-tmp/
+```
+
+5. Passa al branch `gh-pages`, pulisci e copia i file di build:
+
+```bash
+git checkout gh-pages
+rm -rf *
+cp -r ../deploy-tmp/* .
+git add .
+git commit -m "Deploy build"
+git push origin gh-pages
+rm -rf ../deploy-tmp
+git checkout main
+```
+
+6. Configura GitHub Pages su GitHub impostando la pubblicazione dal branch `gh-pages`.
+
+---
+
+### Debug Dashboard
+
+La dashboard di debug è visibile solo in sviluppo. Puoi disattivarla in produzione modificando `main.ts`:
+
+```ts
+if (import.meta.env.DEV) {
+  updateDebugPanel(currentTime);
+}
+```
+
+---
+
+### Uso di TypeScript
+
+Abbiamo convertito i file `.js` in `.ts` per avere:
+
+- Tipizzazione statica e meno errori
+- Migliore manutenzione e scalabilità
+- Supporto integrato con Vite
+
+Il codice TypeScript viene compilato in JavaScript prima di essere eseguito nel browser.
+
+---
+
+### Script di deploy automatico
+
+Per semplificare il deploy, c’è uno script bash `deploy.sh` che esegue tutti i passaggi per pubblicare la build su GitHub Pages.
+
+Rendi eseguibile lo script con:
+
+```bash
+chmod +x deploy.sh
+```
+
+E lancialo con:
+
+```bash
+npm run deploy
+```
+
+---
+
+### Dove trovare aiuto
+
+Se vuoi approfondire o automatizzare ulteriormente il progetto, contattami per:
+
+- Configurazioni avanzate di Vite
+- Miglioramenti al workflow di deploy
+- Supporto su TypeScript o moduli
