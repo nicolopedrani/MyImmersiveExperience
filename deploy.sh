@@ -31,12 +31,12 @@ git add .
 git commit -m "Deploy build automatico $(date +'%Y-%m-%d %H:%M:%S')"
 git push origin gh-pages
 
-# # 8. Torna al branch main
-# echo "🔄 Ritorno al branch main..."
-# git checkout main
+# 8. Torna al branch main
+echo "🔄 Ritorno al branch main..."
+git checkout main
 
-# # 9. Elimina cartella temporanea
-# echo "🗑️ Eliminazione della cartella temporanea...s"
-# rm -rf ../deploy-tmp
+# 9. Elimina cartella temporanea
+echo "🗑️ Eliminazione della cartella temporanea...s"
+rm -rf ../deploy-tmp
 
-# echo "🚀 Deploy completato!"
+echo "🚀 Deploy completato!"
