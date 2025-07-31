@@ -1,5 +1,5 @@
 import { updateDebugPanel } from "./modules/debug";
-import { loadAssets } from "./modules/assets";
+import { loadAssets, getAssets } from "./modules/assets";
 import { preloadPlayerSprites } from "./modules/sprites";
 import { MAP_WIDTH_TILES, MAP_HEIGHT_TILES } from "./modules/map";
 import { player, updatePlayerAnimation, drawPlayer } from "./modules/player";
@@ -75,7 +75,7 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
   // Clear canvas
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-  const assets = loadAssets.getAssets();
+  const assets = getAssets();
   const currentRoom = getCurrentRoom();
   const map = currentRoom.map;
 
