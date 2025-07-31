@@ -221,3 +221,107 @@ Il codice TypeScript viene **compilato in JavaScript** prima di essere eseguito 
 - Puoi scrivere codice più sicuro e chiaro.
 - Il browser continua a eseguire solo JavaScript standard.
 - Vite si occupa di trasformare i file `.ts` in `.js` automaticamente durante lo sviluppo e la build.
+
+---
+
+## 🌍 Deploy su GitHub Pages — Guida completa
+
+Per pubblicare questo progetto su GitHub Pages in modo ordinato e sicuro, abbiamo seguito questi passaggi:
+
+### 1. Inizializzazione di Git
+
+Se non lo avevi già fatto:
+
+```bash
+git init
+git add .
+git commit -m "Primo commit"
+```
+
+Poi si crea il repository su GitHub e si collega:
+
+```bash
+git remote add origin https://github.com/tuo-username/nome-repo.git
+git branch -M main
+git push -u origin main
+```
+
+---
+
+### 2. Creazione del branch `gh-pages`
+
+Questo branch ospiterà **solo i file finali pubblicabili**, quindi conviene separarlo dal codice sorgente.
+
+```bash
+git checkout -b gh-pages
+git add .
+git commit -m "Inizializzazione branch gh-pages"
+git push origin gh-pages
+```
+
+Poi si torna al branch di sviluppo:
+
+```bash
+git checkout main
+```
+
+---
+
+### 3. Build di produzione
+
+Per generare i file ottimizzati per la pubblicazione:
+
+```bash
+npm run build
+```
+
+Questo genera la cartella `dist/` con tutti i file pronti per essere pubblicati.
+
+---
+
+### 4. Copia della build in una cartella temporanea
+
+Per evitare di cancellare file importanti:
+
+```bash
+mkdir ../deploy-tmp
+cp -r dist/* ../deploy-tmp/
+```
+
+---
+
+### 5. Pulizia e pubblicazione su `gh-pages`
+
+Si torna al branch `gh-pages`, si cancella tutto (tranne `.git`), e si copiano i file della `dist`:
+
+```bash
+git checkout gh-pages
+rm -rf *
+cp -r ../deploy-tmp/* .
+git add .
+git commit -m "Deploy build"
+git push origin gh-pages
+```
+
+Infine, si rimuove la cartella temporanea:
+
+```bash
+rm -rf ../deploy-tmp
+```
+
+---
+
+### 6. Configurazione di GitHub Pages
+
+- Vai su GitHub → Repository → Settings → Pages
+- Imposta la pubblicazione dal branch `gh-pages` → root
+
+Dopo pochi minuti il sito sarà disponibile a:
+
+```
+https://tuo-username.github.io/nome-repo/
+```
+
+---
+
+✅ Questo processo separa perfettamente il codice sorgente dalla versione pubblicata del gioco e ti consente di mantenere ordine e controllo sul progetto. Se preferisci, in futuro potresti anche automatizzare tutto con uno script `npm run deploy`.
