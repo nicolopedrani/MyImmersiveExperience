@@ -3,8 +3,8 @@ import { loadAssets } from "./modules/assets";
 import { preloadPlayerSprites } from "./modules/sprites";
 import { room1Map, MAP_WIDTH_TILES, MAP_HEIGHT_TILES } from "./modules/map";
 import { player, updatePlayerAnimation, drawPlayer } from "./modules/player";
-import { setupInputListeners } from "./modules/input";
-import { setupCanvas } from "./modules/canvas";
+import { setupInputListeners, setupTouchControls } from "./modules/input";
+import { setupCanvas, scaleCanvasToWindow } from "./modules/canvas";
 
 // --- Setup canvas ---
 const { canvas, ctx, TILE_SIZE, GAME_WIDTH, GAME_HEIGHT } =
@@ -12,6 +12,8 @@ const { canvas, ctx, TILE_SIZE, GAME_WIDTH, GAME_HEIGHT } =
 if (canvas && ctx) {
   canvas.width = GAME_WIDTH;
   canvas.height = GAME_HEIGHT;
+  scaleCanvasToWindow(canvas);
+  window.addEventListener("resize", () => scaleCanvasToWindow(canvas));
 } else {
   throw new Error("Canvas or context not initialized");
 }
@@ -87,5 +89,6 @@ function draw(
 loadAssets(() => {
   preloadPlayerSprites();
   setupInputListeners();
+  setupTouchControls();
   startGame();
 });

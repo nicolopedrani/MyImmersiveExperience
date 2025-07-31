@@ -26,3 +26,16 @@ export function setupCanvas(map: number[][]): {
     GAME_HEIGHT,
   };
 }
+
+export function scaleCanvasToWindow(canvas: HTMLCanvasElement): void {
+  const scaleX = window.innerWidth / canvas.width;
+  const scaleY = window.innerHeight / canvas.height;
+  const scale = Math.min(scaleX, scaleY);
+
+  canvas.style.transform = `scale(${scale})`;
+  canvas.style.transformOrigin = "top left";
+
+  canvas.style.position = "absolute";
+  canvas.style.left = `${(window.innerWidth - canvas.width * scale) / 2}px`;
+  canvas.style.top = `${(window.innerHeight - canvas.height * scale) / 2}px`;
+}

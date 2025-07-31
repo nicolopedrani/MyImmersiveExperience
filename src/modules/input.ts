@@ -75,3 +75,26 @@ export function setupInputListeners(): void {
     }
   });
 }
+
+function simulateKeyPress(key: string) {
+  const event = new KeyboardEvent("keydown", { key });
+  document.dispatchEvent(event);
+}
+
+export function setupTouchControls(): void {
+  const directions: { [id: string]: string } = {
+    "btn-up": "ArrowUp",
+    "btn-down": "ArrowDown",
+    "btn-left": "ArrowLeft",
+    "btn-right": "ArrowRight",
+    "btn-action": " ", // tasto spazio
+  };
+
+  for (const [btnId, key] of Object.entries(directions)) {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.addEventListener("touchstart", () => simulateKeyPress(key));
+      btn.addEventListener("mousedown", () => simulateKeyPress(key)); // supporto mouse
+    }
+  }
+}
