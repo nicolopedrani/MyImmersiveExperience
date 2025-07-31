@@ -1,5 +1,6 @@
 import { player, playerAnimations, Direction, AnimationState } from "./player";
-import { room1Map, MAP_WIDTH_TILES, MAP_HEIGHT_TILES } from "./map";
+import { getCurrentRoom } from "./roomManager";
+import { checkForDoorInteraction } from "./roomManager";
 
 let isKeyPressed = false;
 
@@ -36,6 +37,12 @@ function handleKeyDown(e: KeyboardEvent): void {
       break;
     case " ": // Spacebar per azione
       console.log("Action button pressed!");
+      // Controlla se il player è su una porta
+      if (checkForDoorInteraction()) {
+        console.log("Entered new room!");
+      } else {
+        console.log("No door here to interact with.");
+      }
       return;
   }
 
@@ -73,6 +80,10 @@ function handleKeyUp(e: KeyboardEvent): void {
 }
 
 function movePlayer(dir: Direction): void {
+  const currentRoomData = getCurrentRoom();
+  const MAP_WIDTH_TILES = currentRoomData.map[0].length;
+  const MAP_HEIGHT_TILES = currentRoomData.map.length;
+
   // Cambia direzione se diversa
   if (dir !== player.direction) {
     player.direction = dir;
@@ -99,9 +110,9 @@ function movePlayer(dir: Direction): void {
       newY >= 0 &&
       newY < MAP_HEIGHT_TILES
     ) {
-      const tile = room1Map[newY][newX];
-      // Tile walkable: 0=grass, 2,3,4,5=path
-      if ([0, 2, 3, 4, 5].includes(tile)) {
+      const tile = currentRoomData.map[newY][newX];
+      // Tile walkable: 0=grass, 2,3,4,5=path, 6=door
+      if ([0, 2, 3, 4, 5, 6].includes(tile)) {
         player.x = newX;
         player.y = newY;
         player.animationState = "walk";

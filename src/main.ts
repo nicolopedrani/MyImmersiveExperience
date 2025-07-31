@@ -1,14 +1,18 @@
 import { updateDebugPanel } from "./modules/debug";
 import { loadAssets } from "./modules/assets";
 import { preloadPlayerSprites } from "./modules/sprites";
-import { room1Map } from "./modules/map";
+import { MAP_WIDTH_TILES, MAP_HEIGHT_TILES } from "./modules/map";
 import { player, updatePlayerAnimation, drawPlayer } from "./modules/player";
 import { setupInputListeners, setupTouchControls } from "./modules/input";
 import { setupCanvas, scaleCanvasToWindow } from "./modules/canvas";
+import { getCurrentRoom, initializeRoomSystem } from "./modules/roomManager";
 
 // --- Setup canvas ---
+const dummyMap = Array(MAP_HEIGHT_TILES)
+  .fill(null)
+  .map(() => Array(MAP_WIDTH_TILES).fill(0));
 const { canvas, ctx, TILE_SIZE, GAME_WIDTH, GAME_HEIGHT } =
-  setupCanvas(room1Map);
+  setupCanvas(dummyMap);
 
 if (!canvas) {
   console.error(
@@ -27,7 +31,7 @@ canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
 
 console.log(
-  `Canvas initialized: ${GAME_WIDTH}x${GAME_HEIGHT} (${room1Map[0].length}x${room1Map.length} tiles)`
+  `Canvas initialized: ${GAME_WIDTH}x${GAME_HEIGHT} (${MAP_WIDTH_TILES}x${MAP_HEIGHT_TILES} tiles)`
 );
 
 // Setup responsive scaling
@@ -56,7 +60,7 @@ function gameLoop(currentTime: number): void {
 
   // Draw
   if (ctx) {
-    draw(ctx, room1Map, TILE_SIZE);
+    draw(ctx, TILE_SIZE);
   }
 
   // Debug
@@ -67,15 +71,13 @@ function gameLoop(currentTime: number): void {
   requestAnimationFrame(gameLoop);
 }
 
-function draw(
-  ctx: CanvasRenderingContext2D,
-  map: number[][],
-  tileSize: number
-): void {
+function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
   // Clear canvas
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
   const assets = loadAssets.getAssets();
+  const currentRoom = getCurrentRoom();
+  const map = currentRoom.map;
 
   // Verifica che gli asset siano caricati
   if (!assets.grass) {
@@ -107,6 +109,9 @@ function draw(
         case 5:
           image = assets.path;
           break;
+        case 6: // Door tile
+          image = assets.door;
+          break;
       }
 
       if (image) {
@@ -133,6 +138,12 @@ function draw(
 
   // Draw player
   drawPlayer(ctx, tileSize);
+
+  // Draw room name
+  ctx.fillStyle = "#fff";
+  ctx.font = "16px Arial";
+  ctx.textAlign = "left";
+  ctx.fillText(currentRoom.name, 10, 30);
 }
 
 // --- Start everything ---
@@ -140,6 +151,9 @@ console.log("Loading assets...");
 loadAssets(() => {
   console.log("Assets loaded, initializing sprites...");
   preloadPlayerSprites();
+
+  console.log("Initializing room system...");
+  initializeRoomSystem();
 
   console.log("Setting up input listeners...");
   setupInputListeners();
