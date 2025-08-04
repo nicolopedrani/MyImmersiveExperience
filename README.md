@@ -579,3 +579,35 @@ Questo genera un file `assets_inventory.txt` con righe come:
 All_Assets/ui/icon.png | 20K | 64x64
 All_Assets/tilesets/grass.png | 145K | 512x512
 ```
+
+Great question — adding a folder to .gitignore prevents future additions, but doesn’t automatically remove files that were already tracked by Git.
+To remove that folder from Git while keeping it locally, follow these steps:
+
+⸻
+
+✅ 1. Remove the folder from Git (but not from disk)
+
+Run this command from the root of your repo:
+
+git rm -r --cached path/to/your-folder
+
+    •	--cached: removes it only from Git’s index (GitHub), not from your local filesystem.
+    •	Replace path/to/your-folder with the actual path (relative to the repo root).
+
+⸻
+
+✅ 2. Commit the removal
+
+git commit -m "Remove folder from repo and add to .gitignore"
+
+⸻
+
+✅ 3. Push to GitHub
+
+git push origin your-branch-name
+
+⸻
+
+After that, the folder will no longer appear on GitHub, and .gitignore will make sure it won’t be re-added.
+
+Let me know if you want to make this part of a deployment or cleanup script!

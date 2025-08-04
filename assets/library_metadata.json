@@ -1,0 +1,124 @@
+{
+  "tilesheet": {
+    "width": 792,
+    "height": 480,
+    "columns": 33,
+    "rows": 20,
+    "tileWidth": 24,
+    "tileHeight": 24
+  },
+  "flags": [
+    {
+      "name": "Australia",
+      "code": "au",
+      "x": 0,
+      "y": 0,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "United States",
+      "code": "us",
+      "x": 15,
+      "y": 0,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Japan",
+      "code": "jp",
+      "x": 30,
+      "y": 0,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Vietnam",
+      "code": "vn",
+      "x": 45,
+      "y": 0,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Maldives",
+      "code": "mv",
+      "x": 60,
+      "y": 0,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Italy",
+      "code": "it",
+      "x": 75,
+      "y": 0,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "France",
+      "code": "fr",
+      "x": 90,
+      "y": 0,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Germany",
+      "code": "de",
+      "x": 105,
+      "y": 0,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Spain",
+      "code": "es",
+      "x": 0,
+      "y": 10,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "United Kingdom",
+      "code": "gb",
+      "x": 15,
+      "y": 10,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Netherlands",
+      "code": "nl",
+      "x": 30,
+      "y": 10,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Switzerland",
+      "code": "ch",
+      "x": 45,
+      "y": 10,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Morocco",
+      "code": "ma",
+      "x": 60,
+      "y": 10,
+      "width": 15,
+      "height": 10
+    },
+    {
+      "name": "Egypt",
+      "code": "eg",
+      "x": 75,
+      "y": 10,
+      "width": 15,
+      "height": 10
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 # .gitignore
-node_modules/
 dist/
 javascript-code/
 All_Assets/
+.vscode/
