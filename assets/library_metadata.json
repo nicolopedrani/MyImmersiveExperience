@@ -1,122 +1,210 @@
 {
   "tilesheet": {
+    "image": "library.png",
     "width": 792,
     "height": 480,
     "columns": 33,
     "rows": 20,
     "tileWidth": 24,
-    "tileHeight": 24
+    "tileHeight": 24,
+    "tilesize": 24
   },
-  "flags": [
+  "plants": [
     {
-      "name": "Australia",
-      "code": "au",
+      "name": "four_plants",
+      "code": "4p",
       "x": 0,
       "y": 0,
-      "width": 15,
-      "height": 10
+      "width": 48,
+      "height": 48
     },
     {
-      "name": "United States",
-      "code": "us",
-      "x": 15,
-      "y": 0,
-      "width": 15,
-      "height": 10
-    },
-    {
-      "name": "Japan",
-      "code": "jp",
-      "x": 30,
-      "y": 0,
-      "width": 15,
-      "height": 10
-    },
-    {
-      "name": "Vietnam",
-      "code": "vn",
-      "x": 45,
-      "y": 0,
-      "width": 15,
-      "height": 10
-    },
-    {
-      "name": "Maldives",
-      "code": "mv",
-      "x": 60,
-      "y": 0,
-      "width": 15,
-      "height": 10
-    },
-    {
-      "name": "Italy",
-      "code": "it",
-      "x": 75,
-      "y": 0,
-      "width": 15,
-      "height": 10
-    },
-    {
-      "name": "France",
-      "code": "fr",
-      "x": 90,
-      "y": 0,
-      "width": 15,
-      "height": 10
-    },
-    {
-      "name": "Germany",
-      "code": "de",
-      "x": 105,
-      "y": 0,
-      "width": 15,
-      "height": 10
-    },
-    {
-      "name": "Spain",
-      "code": "es",
+      "name": "big_plant",
+      "code": "bp",
       "x": 0,
-      "y": 10,
-      "width": 15,
-      "height": 10
+      "y": 48,
+      "width": 48,
+      "height": 48
+    }
+  ],
+  "books": [
+    {
+      "name": "booksA",
+      "code": "bA",
+      "x": 216,
+      "y": 0,
+      "width": 24,
+      "height": 48
     },
     {
-      "name": "United Kingdom",
-      "code": "gb",
-      "x": 15,
-      "y": 10,
-      "width": 15,
-      "height": 10
+      "name": "booksB",
+      "code": "bB",
+      "x": 216,
+      "y": 72,
+      "width": 24,
+      "height": 48
     },
     {
-      "name": "Netherlands",
-      "code": "nl",
-      "x": 30,
-      "y": 10,
-      "width": 15,
-      "height": 10
+      "name": "booksC",
+      "code": "bC",
+      "x": 264,
+      "y": 96,
+      "width": 48,
+      "height": 24
     },
     {
-      "name": "Switzerland",
-      "code": "ch",
-      "x": 45,
-      "y": 10,
-      "width": 15,
-      "height": 10
+      "name": "single_book_open_A",
+      "code": "sboA",
+      "x": 264,
+      "y": 0,
+      "width": 48,
+      "height": 24
     },
     {
-      "name": "Morocco",
-      "code": "ma",
-      "x": 60,
-      "y": 10,
-      "width": 15,
-      "height": 10
+      "name": "single_book_open_B",
+      "code": "sboB",
+      "x": 264,
+      "y": 48,
+      "width": 48,
+      "height": 24
     },
     {
-      "name": "Egypt",
-      "code": "eg",
-      "x": 75,
-      "y": 10,
+      "name": "single_book_A",
+      "code": "sbA",
+      "x": 336,
+      "y": 0,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "name": "single_book_B",
+      "code": "sbB",
+      "x": 336,
+      "y": 24,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "name": "single_book_C",
+      "code": "sbC",
+      "x": 336,
+      "y": 48,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "name": "single_book_D",
+      "code": "sbD",
+      "x": 336,
+      "y": 72,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "name": "single_book_E",
+      "code": "sbE",
+      "x": 336,
+      "y": 96,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "name": "single_book_F",
+      "code": "sbF",
+      "x": 336,
+      "y": 120,
+      "width": 24,
+      "height": 24
+    }
+  ],
+  "objects": [
+    {
+      "name": "Bookshelf_A",
+      "code": "bsA",
+      "x": 120,
+      "y": 360,
+      "width": 96,
+      "height": 120
+    },
+    {
+      "name": "Bookshelf_B",
+      "code": "bsB",
+      "x": 240,
+      "y": 360,
+      "width": 96,
+      "height": 120
+    },
+    {
+      "name": "Bookshelf_C",
+      "code": "bsC",
+      "x": 360,
+      "y": 360,
+      "width": 96,
+      "height": 120
+    },
+    {
+      "name": "table",
+      "code": "t",
+      "x": 336,
+      "y": 192,
+      "width": 168,
+      "height": 96
+    },
+    {
+      "name": "world_map",
+      "code": "wm",
+      "x": 120,
+      "y": 192,
+      "width": 96,
+      "height": 120
+    },
+    {
+      "name": "chair",
+      "code": "c",
+      "x": 648,
+      "y": 72,
+      "width": 48,
+      "height": 72
+    },
+    {
+      "name": "rug",
+      "code": "r",
+      "x": 432,
+      "y": 0,
+      "width": 168,
+      "height": 72
+    },
+    {
+      "name": "pendulum",
+      "code": "p",
+      "x": 48,
+      "y": 0,
+      "width": 72,
+      "height": 120
+    },
+    {
+      "name": "lamp",
+      "code": "l",
+      "x": 600,
+      "y": 96,
+      "width": 24,
+      "height": 48
+    }
+  ],
+  "paths": [
+    {
+      "name": "path_walk",
+      "code": "pw",
+      "x": 72,
+      "y": 192,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "name": "pavement",
+      "code": "pv",
+      "x": 0,
+      "y": 192,
       "width": 15,
       "height": 10
     }
