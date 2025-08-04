@@ -535,3 +535,47 @@ Questo ti permette di lavorare sul codice di quel commit senza toccare `main`.
 - Usa `git stash` per mettere da parte temporaneamente modifiche non committate.
 
 ---
+
+---
+
+## 📁 Pulizia e inventario immagini nella cartella All_Assets
+
+### 🔤 Rinominare file con spazi
+
+Per sostituire gli spazi nei nomi dei file con underscore:
+
+```bash
+find All_Assets -depth -name "* *" | while read file; do
+  new_file="$(dirname "$file")/$(basename "$file" | tr ' ' '_')"
+  mv "$file" "$new_file"
+done
+```
+
+Questo comando rinomina tutti i file e le cartelle con spazi, convertendoli in `_`.
+
+---
+
+### 🗂️ Generare inventario degli asset (nome, dimensione, risoluzione)
+
+1. Installa ImageMagick (se non presente):
+
+```bash
+brew install imagemagick
+```
+
+2. Esegui questo comando per salvare un inventario dei file immagine:
+
+```bash
+find All_Assets -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.tmx" -o -iname "*.tsx" \) | while read file; do
+  size=$(du -h "$file" | cut -f1)
+  dimensions=$(identify -format "%wx%h" "$file" 2>/dev/null)
+  echo "$file | $size | $dimensions"
+done > assets_inventory.txt
+```
+
+Questo genera un file `assets_inventory.txt` con righe come:
+
+```
+All_Assets/ui/icon.png | 20K | 64x64
+All_Assets/tilesets/grass.png | 145K | 512x512
+```
