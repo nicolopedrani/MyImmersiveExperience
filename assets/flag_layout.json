@@ -1,9 +1,0 @@
-[
-  { "code": "au", "tileX": 1, "tileY": 1 }, // Australia
-  { "code": "jp", "tileX": 2, "tileY": 1 }, // Giappone
-  { "code": "vn", "tileX": 3, "tileY": 1 }, // Vietnam
-  { "code": "ma", "tileX": 4, "tileY": 1 }, // Marocco (Nord Africa)
-  { "code": "eu", "tileX": 5, "tileY": 1 }, // Europa (EU flag)
-  { "code": "us", "tileX": 6, "tileY": 1 }, // Stati Uniti
-  { "code": "mv", "tileX": 7, "tileY": 1 } // Maldive
-]
