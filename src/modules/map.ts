@@ -26,7 +26,7 @@
 // 32 = distribution_network_map (non-walkable - Supply chain network)
 // 33 = forecast_histogram (non-walkable - Forecast distribution histogram)
 // 34 = box_plot (non-walkable - Statistical box plot analysis)
-// 35 = reserved_tile (reserved for expansion)
+// 35 = deloitte_consulting (non-walkable - Company branding tile)
 // 36 = powerbi_dashboard_left (non-walkable - Large BI dashboard left half)
 // 37 = powerbi_dashboard_right (non-walkable - Large BI dashboard right half)
 // 38 = python_sklearn (non-walkable - Python/scikit-learn stack)
@@ -35,7 +35,7 @@
 // 41 = azure_ml (non-walkable - Azure Machine Learning)
 // 42 = azure_data_factory (non-walkable - Azure Data Factory)
 // 43 = chatbot_ai (non-walkable - Chatbot and conversational AI)
-// 44 = reserved_data_science (reserved)
+// 44 = gantt_chart (non-walkable - Project management Gantt chart)
 // 45-60 = Reserved for future R&D System Engineer elements
 
 export const MAP_WIDTH_TILES = 12;
@@ -213,6 +213,6 @@ export const WALKABLE_TILES = [
 ]; // paths, doors, library floor, rug, complete football field (removed bushes)
 
 // Non-walkable tiles (including grass!)
-export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43]; // grass, trees, bookshelves, flags, furniture, world map, data science displays (removed bushes)
+export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]; // grass, trees, bookshelves, flags, furniture, world map, data science displays (removed bushes)
 
 export let currentRoom: Room = rooms.room1;

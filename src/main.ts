@@ -208,6 +208,9 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
         case 34: // Box plot analysis
           image = assets.box_plot;
           break;
+        case 35: // Deloitte Consulting branding
+          image = assets.deloitte_consulting;
+          break;
         // BI Dashboard (2 tiles)
         case 36: // Power BI dashboard left
           image = assets.powerbi_dashboard_left;
@@ -234,6 +237,9 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
           break;
         case 43: // Chatbot AI
           image = assets.chatbot_ai;
+          break;
+        case 44: // Gantt chart project management
+          image = assets.gantt_chart;
           break;
       }
 
@@ -315,6 +321,9 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
           case 34: // Box plot
             fallbackColor = "#06b6d4";
             break;
+          case 35: // Deloitte Consulting
+            fallbackColor = "#86bc25";
+            break;
           case 36: // Power BI left
           case 37: // Power BI right
             fallbackColor = "#f2c811";
@@ -334,6 +343,9 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
             break;
           case 43: // Chatbot AI
             fallbackColor = "#2d3748";
+            break;
+          case 44: // Gantt chart
+            fallbackColor = "#1a202c";
             break;
         }
 

@@ -458,6 +458,10 @@ function createDataScienceTiles(): void {
   createAzureML(); // tile 41
   createAzureDataFactory(); // tile 42
   createChatbotTile(); // tile 43
+  
+  // Fill remaining spots
+  createDeloitteTile(); // tile 35
+  createGanttChart(); // tile 44
 
   console.log("✅ Diverse Data Science visualization tiles created");
 }
@@ -1170,6 +1174,117 @@ function createChatbotTile(): void {
   const img = new Image();
   img.src = canvas.toDataURL();
   assets["chatbot_ai"] = img;
+}
+
+// === COMPANY BRANDING ===
+
+function createDeloitteTile(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Black background
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Deloitte green brand color
+    ctx.fillStyle = "#86bc25";
+    ctx.font = "bold 9px Arial";
+    ctx.fillText("Deloitte", 12, 20);
+    
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("Consulting", 8, 32);
+    
+    // Green dot (Deloitte brand element)
+    ctx.fillStyle = "#86bc25";
+    ctx.beginPath();
+    ctx.arc(32, 45, 8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Period after Deloitte (brand styling)
+    ctx.beginPath();
+    ctx.arc(56, 16, 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Additional brand elements
+    ctx.font = "6px Arial";
+    ctx.fillText("2022-2023", 15, 55);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["deloitte_consulting"] = img;
+}
+
+// === PROJECT MANAGEMENT ===
+
+function createGanttChart(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a202c";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("Gantt Chart", 5, 12);
+    
+    // Timeline header
+    ctx.fillStyle = "#4a5568";
+    ctx.fillRect(0, 16, 64, 8);
+    
+    // Month labels
+    ctx.fillStyle = "#fff";
+    ctx.font = "6px Arial";
+    ctx.fillText("Q1", 8, 22);
+    ctx.fillText("Q2", 24, 22);
+    ctx.fillText("Q3", 40, 22);
+    ctx.fillText("Q4", 56, 22);
+    
+    // Gantt bars (different project phases)
+    // Project 1 - Data Collection
+    ctx.fillStyle = "#3182ce";
+    ctx.fillRect(6, 28, 18, 4);
+    
+    // Project 2 - Model Development  
+    ctx.fillStyle = "#10b981";
+    ctx.fillRect(14, 36, 24, 4);
+    
+    // Project 3 - Deployment
+    ctx.fillStyle = "#f59e0b";
+    ctx.fillRect(32, 44, 20, 4);
+    
+    // Project 4 - Maintenance
+    ctx.fillStyle = "#ef4444";
+    ctx.fillRect(48, 52, 12, 4);
+    
+    // Progress indicators (filled portions)
+    ctx.fillStyle = "#86bc25";
+    ctx.fillRect(6, 28, 12, 4); // 70% complete
+    ctx.fillRect(14, 36, 16, 4); // 65% complete
+    ctx.fillRect(32, 44, 8, 4); // 40% complete
+    
+    // Current date line
+    ctx.strokeStyle = "#dc2626";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(28, 25);
+    ctx.lineTo(28, 58);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["gantt_chart"] = img;
 }
 
 export function getAssets(): { [key: string]: HTMLImageElement } {
