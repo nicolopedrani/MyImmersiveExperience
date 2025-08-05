@@ -6,6 +6,9 @@ import { player, updatePlayerAnimation, drawPlayer } from "./modules/player";
 import { setupInputListeners, setupTouchControls } from "./modules/input";
 import { setupCanvas, scaleCanvasToWindow } from "./modules/canvas";
 import { getCurrentRoom, initializeRoomSystem } from "./modules/roomManager";
+import { initializeBossInteraction, checkBossProximity } from "./modules/bossInteraction";
+import { ConversationSystem } from "./modules/conversation";
+import { initializeAI, answerQuestion, getFallbackResponse, isAIReady } from "./modules/aiProcessor";
 
 // --- Setup canvas ---
 const dummyMap = Array(MAP_HEIGHT_TILES)
@@ -38,6 +41,24 @@ console.log(
 scaleCanvasToWindow(canvas);
 window.addEventListener("resize", () => scaleCanvasToWindow(canvas));
 
+// --- Initialize conversation system ---
+const conversationSystem = new ConversationSystem();
+
+// Setup boss conversation event handler
+document.addEventListener('startBossConversation', () => {
+  conversationSystem.showConversation();
+});
+
+// Setup AI answer callback
+conversationSystem.setAnswerCallback(async (question: string): Promise<string> => {
+  if (isAIReady()) {
+    return await answerQuestion(question);
+  } else {
+    // Use fallback response while AI is loading
+    return getFallbackResponse(question);
+  }
+});
+
 // --- Game loop ---
 let lastTime = 0;
 let gameRunning = false;
@@ -57,6 +78,11 @@ function gameLoop(currentTime: number): void {
 
   // Update
   updatePlayerAnimation(deltaTime);
+  
+  // Check boss proximity (only if conversation is not active)
+  if (!conversationSystem.isConversationActive()) {
+    checkBossProximity();
+  }
 
   // Draw
   if (ctx) {
@@ -695,9 +721,21 @@ loadAssets(() => {
   console.log("Initializing room system...");
   initializeRoomSystem();
 
+  console.log("Initializing boss interaction system...");
+  initializeBossInteraction();
+
   console.log("Setting up input listeners...");
   setupInputListeners();
   setupTouchControls();
+
+  console.log("Initializing AI system (this may take a moment)...");
+  initializeAI().then((success) => {
+    if (success) {
+      console.log("AI system ready!");
+    } else {
+      console.log("AI system failed to initialize, using fallback responses");
+    }
+  });
 
   console.log("Starting game...");
   startGame();

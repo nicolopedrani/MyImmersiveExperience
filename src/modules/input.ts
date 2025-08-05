@@ -4,6 +4,7 @@ import { player, playerAnimations, Direction, AnimationState } from "./player";
 import { getCurrentRoom } from "./roomManager";
 import { checkForDoorInteraction, getDoorAtPosition } from "./roomManager";
 import { WALKABLE_TILES } from "./map";
+import { isBossInteractionAvailable } from "./bossInteraction";
 
 let keysPressed: { [key: string]: boolean } = {};
 let currentDoorMessage: string | null = null;
@@ -59,6 +60,13 @@ function hideDoorMessage(): void {
 }
 
 function handleKeyDown(e: KeyboardEvent): void {
+  // Check if any input field is focused (conversation system)
+  const activeElement = document.activeElement;
+  if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+    // Don't handle game controls when input field is focused
+    return;
+  }
+
   let dir: Direction | null = null;
 
   switch (e.key) {
@@ -87,16 +95,24 @@ function handleKeyDown(e: KeyboardEvent): void {
         // Only trigger once per press
         console.log("Action button pressed!");
 
-        // Check if the player is on a door
-        const door = getDoorAtPosition(player.x, player.y);
-        if (door) {
-          console.log(`Attempting to enter door to ${door.targetRoom}`);
-          if (checkForDoorInteraction()) {
-            console.log("Successfully entered new room!");
-            hideDoorMessage(); // Hide message when transitioning
-          }
+        // Check for boss interaction first
+        if (isBossInteractionAvailable()) {
+          console.log("Starting boss conversation!");
+          // Import and trigger conversation - we'll implement this in main.ts
+          const event = new CustomEvent('startBossConversation');
+          document.dispatchEvent(event);
         } else {
-          console.log("No door here to interact with.");
+          // Check if the player is on a door
+          const door = getDoorAtPosition(player.x, player.y);
+          if (door) {
+            console.log(`Attempting to enter door to ${door.targetRoom}`);
+            if (checkForDoorInteraction()) {
+              console.log("Successfully entered new room!");
+              hideDoorMessage(); // Hide message when transitioning
+            }
+          } else {
+            console.log("No door here to interact with.");
+          }
         }
 
         keysPressed[e.key] = true;
@@ -117,6 +133,13 @@ function handleKeyDown(e: KeyboardEvent): void {
 }
 
 function handleKeyUp(e: KeyboardEvent): void {
+  // Check if any input field is focused (conversation system)
+  const activeElement = document.activeElement;
+  if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+    // Don't handle game controls when input field is focused
+    return;
+  }
+
   // Mark key as released
   keysPressed[e.key] = false;
 
