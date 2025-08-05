@@ -611,3 +611,15 @@ git push origin your-branch-name
 After that, the folder will no longer appear on GitHub, and .gitignore will make sure it won’t be re-added.
 
 Let me know if you want to make this part of a deployment or cleanup script!
+
+---
+
+I want 3 adjustments:
+
+- Cannot find module '../../assets/assets_metadata.json'. Consider using '--resolveJsonModule' to import module with '.json' extension.ts(2732)
+- remove the words "reading" , "travel" and "football" in the hobbies room
+- add just one football ground. The whole asset FootballGround.png is the football ground. Maybe you can divide it in grid and then reassembly the grid pieces in the room
+
+# CLAUDE CODE
+
+https://docs.anthropic.com/en/docs/claude-code/overview#install-and-authenticate
