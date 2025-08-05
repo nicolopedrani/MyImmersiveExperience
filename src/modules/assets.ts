@@ -463,7 +463,10 @@ function createDataScienceTiles(): void {
   createDeloitteTile(); // tile 35
   createGanttChart(); // tile 44
 
-  console.log("✅ Diverse Data Science visualization tiles created");
+  // R&D System Engineer tiles
+  createRDTiles();
+
+  console.log("✅ Diverse Data Science and R&D visualization tiles created");
 }
 
 // === BUSINESS ANALYTICS TILES ===
@@ -1197,13 +1200,8 @@ function createDeloitteTile(): void {
     ctx.font = "bold 8px Arial";
     ctx.fillText("Consulting", 8, 32);
     
-    // Green dot (Deloitte brand element)
-    ctx.fillStyle = "#86bc25";
-    ctx.beginPath();
-    ctx.arc(32, 45, 8, 0, Math.PI * 2);
-    ctx.fill();
-    
     // Period after Deloitte (brand styling)
+    ctx.fillStyle = "#86bc25";
     ctx.beginPath();
     ctx.arc(56, 16, 2, 0, Math.PI * 2);
     ctx.fill();
@@ -1285,6 +1283,903 @@ function createGanttChart(): void {
   const img = new Image();
   img.src = canvas.toDataURL();
   assets["gantt_chart"] = img;
+}
+
+// === R&D SYSTEM ENGINEER TILES ===
+
+function createRDTiles(): void {
+  console.log("🔴 Creating R&D System Engineer visualization tiles...");
+
+  // Row 1: Infrared Systems
+  createIRSpectrum(); // tile 45
+  createAtmosphericTransmission(); // tile 46
+  createMultiCameraArray(); // tile 47
+  createLeonardoSpa(); // tile 48
+  
+  // Row 2: Detection & Tracking Algorithms
+  createObjectDetection(); // tile 49
+  createKalmanFilter(); // tile 50
+  createOpticalFlow(); // tile 51
+  
+  // Row 3: Missile Warning Systems
+  createCoverage360(); // tile 52
+  createThreatInterface(); // tile 53
+  createMultiTargetTracking(); // tile 54
+  
+  // Row 4: Tools & Architecture
+  createMatlabSimulink(); // tile 55
+  createSystemArchitecture(); // tile 56
+  createRequirementsSpecs(); // tile 57
+  
+  // Additional hardware tile
+  createIRDetector(); // tile 58
+
+  console.log("✅ R&D System Engineer visualization tiles created");
+}
+
+// === INFRARED SYSTEMS ===
+
+function createIRSpectrum(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("IR Spectrum", 5, 12);
+    
+    // Temperature scale
+    ctx.fillStyle = "#ff4444";
+    ctx.font = "6px Arial";
+    ctx.fillText("Hot", 5, 22);
+    ctx.fillStyle = "#4444ff";
+    ctx.fillText("Cold", 45, 22);
+    
+    // IR heat signature visualization
+    const gradient = ctx.createLinearGradient(0, 25, 64, 25);
+    gradient.addColorStop(0, "#000080"); // Cold (deep blue)
+    gradient.addColorStop(0.3, "#0080ff"); // Cool (blue)
+    gradient.addColorStop(0.5, "#00ff00"); // Medium (green)
+    gradient.addColorStop(0.7, "#ffff00"); // Warm (yellow)
+    gradient.addColorStop(0.9, "#ff8000"); // Hot (orange)
+    gradient.addColorStop(1, "#ff0000"); // Very hot (red)
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(5, 25, 54, 20);
+    
+    // Wavelength indicators
+    ctx.fillStyle = "#fff";
+    ctx.font = "5px Arial";
+    ctx.fillText("3-5μm", 8, 52);
+    ctx.fillText("8-12μm", 35, 52);
+    
+    // MWIR/LWIR bands
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(5, 25, 20, 20); // MWIR
+    ctx.strokeRect(35, 25, 24, 20); // LWIR
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["ir_spectrum"] = img;
+}
+
+function createAtmosphericTransmission(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 7px Arial";
+    ctx.fillText("Atmos Trans", 5, 12);
+    
+    // Axes
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(10, 55); ctx.lineTo(58, 55); // X-axis
+    ctx.moveTo(10, 55); ctx.lineTo(10, 20); // Y-axis
+    ctx.stroke();
+    
+    // Labels
+    ctx.fillStyle = "#aaa";
+    ctx.font = "5px Arial";
+    ctx.fillText("λ(μm)", 45, 60);
+    ctx.fillText("T%", 2, 25);
+    
+    // Atmospheric transmission curve
+    ctx.strokeStyle = "#00ff88";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    // Realistic atmospheric transmission with windows and absorption bands
+    const points = [
+      {x: 12, y: 45}, // 1μm - poor transmission
+      {x: 16, y: 35}, // 2μm - H2O absorption
+      {x: 20, y: 25}, // 3μm - MWIR window start
+      {x: 24, y: 25}, // 4μm - good MWIR
+      {x: 28, y: 25}, // 5μm - MWIR window end
+      {x: 32, y: 45}, // 6μm - CO2 absorption
+      {x: 36, y: 45}, // 7μm - poor transmission
+      {x: 40, y: 25}, // 8μm - LWIR window start
+      {x: 44, y: 25}, // 10μm - good LWIR
+      {x: 48, y: 25}, // 12μm - LWIR window end
+      {x: 52, y: 45}, // 14μm - poor transmission
+      {x: 56, y: 50}, // 16μm - very poor
+    ];
+    
+    for (let i = 0; i < points.length; i++) {
+      if (i === 0) ctx.moveTo(points[i].x, points[i].y);
+      else ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+    
+    // Mark IR windows
+    ctx.fillStyle = "rgba(0, 255, 136, 0.2)";
+    ctx.fillRect(20, 20, 8, 35); // MWIR window
+    ctx.fillRect(40, 20, 8, 35); // LWIR window
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["atmospheric_transmission"] = img;
+}
+
+function createMultiCameraArray(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("Multi-Cam", 12, 12);
+    
+    // Central platform
+    ctx.fillStyle = "#444";
+    ctx.beginPath();
+    ctx.arc(32, 32, 12, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Camera positions around 360°
+    const cameras = [
+      {angle: 0, color: "#ff4444"},      // 0°
+      {angle: Math.PI/2, color: "#44ff44"},   // 90°
+      {angle: Math.PI, color: "#4444ff"},     // 180°
+      {angle: 3*Math.PI/2, color: "#ffff44"}, // 270°
+      {angle: Math.PI/4, color: "#ff44ff"},   // 45°
+      {angle: 3*Math.PI/4, color: "#44ffff"}, // 135°
+    ];
+    
+    cameras.forEach(cam => {
+      const x = 32 + Math.cos(cam.angle) * 18;
+      const y = 32 + Math.sin(cam.angle) * 18;
+      
+      // Camera housing
+      ctx.fillStyle = cam.color;
+      ctx.fillRect(x-3, y-3, 6, 6);
+      
+      // Field of view
+      ctx.strokeStyle = cam.color;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.arc(x, y, 12, cam.angle - Math.PI/6, cam.angle + Math.PI/6);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    });
+    
+    // Coverage indicator
+    ctx.fillStyle = "#fff";
+    ctx.font = "6px Arial";
+    ctx.fillText("360°", 26, 58);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["multi_camera_array"] = img;
+}
+
+function createLeonardoSpa(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Leonardo red background
+    ctx.fillStyle = "#C8102E";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Leonardo white text - centered
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Leonardo", 32, 26);
+    
+    ctx.font = "bold 10px Arial";
+    ctx.fillText("SpA", 32, 42);
+    
+    // Employment period
+    ctx.font = "8px Arial";
+    ctx.fillText("2024 - present", 32, 56);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["leonardo_spa"] = img;
+}
+
+// === DETECTION & TRACKING ALGORITHMS ===
+
+function createObjectDetection(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("Detection", 8, 12);
+    
+    // Simulated IR image background
+    ctx.fillStyle = "#333";
+    ctx.fillRect(5, 18, 54, 40);
+    
+    // Detected objects with bounding boxes
+    const detections = [
+      {x: 15, y: 25, w: 12, h: 8, conf: "0.92", color: "#00ff88"},
+      {x: 35, y: 30, w: 10, h: 10, conf: "0.87", color: "#ffaa00"},
+      {x: 45, y: 40, w: 8, h: 6, conf: "0.76", color: "#ff4444"},
+    ];
+    
+    detections.forEach(det => {
+      // Object (simulated heat signature)
+      ctx.fillStyle = det.color;
+      ctx.globalAlpha = 0.6;
+      ctx.fillRect(det.x + 2, det.y + 2, det.w - 4, det.h - 4);
+      ctx.globalAlpha = 1;
+      
+      // Bounding box
+      ctx.strokeStyle = det.color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(det.x, det.y, det.w, det.h);
+      
+      // Confidence score
+      ctx.fillStyle = det.color;
+      ctx.font = "5px Arial";
+      ctx.fillText(det.conf, det.x, det.y - 1);
+    });
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["object_detection"] = img;
+}
+
+function createKalmanFilter(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("Kalman", 15, 12);
+    
+    // State estimation visualization
+    // Predicted path
+    ctx.strokeStyle = "#4444ff";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(10, 50);
+    ctx.quadraticCurveTo(25, 30, 50, 25);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Actual measurements
+    ctx.fillStyle = "#ff4444";
+    const measurements = [{x: 12, y: 48}, {x: 20, y: 38}, {x: 30, y: 32}, {x: 42, y: 28}, {x: 48, y: 26}];
+    measurements.forEach(m => {
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // Uncertainty ellipses
+    ctx.strokeStyle = "#00ff88";
+    ctx.lineWidth = 1;
+    measurements.forEach((m, i) => {
+      const size = 4 + i * 1.5; // Growing uncertainty
+      ctx.beginPath();
+      ctx.ellipse(m.x, m.y, size, size * 0.6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    
+    // Legend
+    ctx.font = "5px Arial";
+    ctx.fillStyle = "#4444ff";
+    ctx.fillText("Pred", 5, 20);
+    ctx.fillStyle = "#ff4444";
+    ctx.fillText("Meas", 5, 28);
+    ctx.fillStyle = "#00ff88";
+    ctx.fillText("Uncert", 5, 36);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["kalman_filter"] = img;
+}
+
+function createOpticalFlow(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("Opt Flow", 12, 12);
+    
+    // Grid of motion vectors
+    ctx.strokeStyle = "#00ffaa";
+    ctx.lineWidth = 1;
+    
+    for (let x = 15; x < 55; x += 12) {
+      for (let y = 20; y < 55; y += 12) {
+        // Vector direction based on position (simulating object motion)
+        const dx = (x - 32) * 0.1 + Math.sin(x * 0.1) * 3;
+        const dy = (y - 35) * 0.1 + Math.cos(y * 0.1) * 2;
+        
+        // Draw vector arrow
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + dx, y + dy);
+        ctx.stroke();
+        
+        // Arrow head
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(x + dx, y + dy);
+        ctx.lineTo(x + dx - 3 * Math.cos(angle - Math.PI/6), y + dy - 3 * Math.sin(angle - Math.PI/6));
+        ctx.moveTo(x + dx, y + dy);
+        ctx.lineTo(x + dx - 3 * Math.cos(angle + Math.PI/6), y + dy - 3 * Math.sin(angle + Math.PI/6));
+        ctx.stroke();
+      }
+    }
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["optical_flow"] = img;
+}
+
+// === MISSILE WARNING SYSTEMS ===
+
+function createCoverage360(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("360° Warn", 8, 12);
+    
+    // Central missile warning system
+    ctx.fillStyle = "#444";
+    ctx.beginPath();
+    ctx.arc(32, 32, 8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 360° coverage sectors
+    const sectors = [
+      {start: 0, end: Math.PI/2, color: "#00ff88"},
+      {start: Math.PI/2, end: Math.PI, color: "#ffaa00"},
+      {start: Math.PI, end: 3*Math.PI/2, color: "#ff4444"},
+      {start: 3*Math.PI/2, end: 2*Math.PI, color: "#4488ff"},
+    ];
+    
+    sectors.forEach(sector => {
+      ctx.fillStyle = sector.color;
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.moveTo(32, 32);
+      ctx.arc(32, 32, 25, sector.start, sector.end);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      
+      // Sector boundaries
+      ctx.strokeStyle = sector.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(32, 32);
+      ctx.lineTo(32 + Math.cos(sector.start) * 25, 32 + Math.sin(sector.start) * 25);
+      ctx.stroke();
+    });
+    
+    // Range rings
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(32, 32, 15, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(32, 32, 25, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Range labels
+    ctx.fillStyle = "#aaa";
+    ctx.font = "5px Arial";
+    ctx.fillText("20km", 5, 58);
+    ctx.fillText("40km", 45, 58);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["coverage_360"] = img;
+}
+
+function createThreatInterface(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("Threats", 15, 12);
+    
+    // Threat display interface
+    ctx.strokeStyle = "#00ff88";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(5, 16, 54, 42);
+    
+    // Threat indicators
+    const threats = [
+      {x: 15, y: 25, level: "HIGH", color: "#ff4444"},
+      {x: 35, y: 30, level: "MED", color: "#ffaa00"},
+      {x: 45, y: 40, level: "LOW", color: "#44ff44"},
+    ];
+    
+    threats.forEach((threat, i) => {
+      // Threat icon
+      ctx.fillStyle = threat.color;
+      ctx.beginPath();
+      ctx.moveTo(threat.x, threat.y - 3);
+      ctx.lineTo(threat.x - 3, threat.y + 3);
+      ctx.lineTo(threat.x + 3, threat.y + 3);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Threat level
+      ctx.font = "5px Arial";
+      ctx.fillText(threat.level, threat.x - 6, threat.y + 8);
+      
+      // Range/bearing info
+      ctx.fillStyle = "#aaa";
+      ctx.font = "4px Arial";
+      ctx.fillText(`${15 + i * 5}km`, threat.x - 8, threat.y + 12);
+      ctx.fillText(`${45 + i * 30}°`, threat.x - 6, threat.y + 16);
+    });
+    
+    // Status indicators
+    ctx.fillStyle = "#00ff88";
+    ctx.fillRect(8, 52, 6, 4);
+    ctx.fillStyle = "#fff";
+    ctx.font = "5px Arial";
+    ctx.fillText("ACTIVE", 16, 55);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["threat_interface"] = img;
+}
+
+function createMultiTargetTracking(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title  
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("MTT", 25, 12);
+    
+    // Multiple target tracks
+    const tracks = [
+      {x: 15, y: 25, id: "T1", color: "#ff4444", history: [{x: 10, y: 30}, {x: 12, y: 28}, {x: 15, y: 25}]},
+      {x: 40, y: 35, id: "T2", color: "#44ff44", history: [{x: 35, y: 30}, {x: 38, y: 32}, {x: 40, y: 35}]},
+      {x: 25, y: 45, id: "T3", color: "#4444ff", history: [{x: 20, y: 50}, {x: 22, y: 48}, {x: 25, y: 45}]},
+    ];
+    
+    tracks.forEach(track => {
+      // Track history
+      ctx.strokeStyle = track.color;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      track.history.forEach((pos, i) => {
+        if (i === 0) ctx.moveTo(pos.x, pos.y);
+        else ctx.lineTo(pos.x, pos.y);
+      });
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      
+      // Current position
+      ctx.fillStyle = track.color;
+      ctx.beginPath();
+      ctx.arc(track.x, track.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Target ID and info
+      ctx.font = "6px Arial";
+      ctx.fillText(track.id, track.x + 5, track.y - 2);
+      
+      // Velocity vector
+      ctx.strokeStyle = track.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(track.x, track.y);
+      ctx.lineTo(track.x + 8, track.y - 3);
+      ctx.stroke();
+    });
+    
+    // Status
+    ctx.fillStyle = "#fff";
+    ctx.font = "5px Arial";
+    ctx.fillText("3 TRACKS", 5, 58);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["multi_target_tracking"] = img;
+}
+
+// === TOOLS & ARCHITECTURE ===
+
+function createMatlabSimulink(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // MATLAB orange background
+    ctx.fillStyle = "#e97627";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // MATLAB logo representation
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 10px Arial";
+    ctx.fillText("MATLAB", 8, 18);
+    
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("Simulink", 10, 30);
+    
+    // Simulink block diagram elements
+    ctx.strokeStyle = "#fff";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.lineWidth = 1;
+    
+    // Input block
+    ctx.fillRect(8, 38, 12, 8);
+    ctx.strokeRect(8, 38, 12, 8);
+    ctx.fillStyle = "#fff";
+    ctx.font = "5px Arial";
+    ctx.fillText("In", 12, 44);
+    
+    // Processing block
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.fillRect(25, 36, 14, 12);
+    ctx.strokeRect(25, 36, 14, 12);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Filter", 27, 43);
+    
+    // Output block
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.fillRect(44, 38, 12, 8);
+    ctx.strokeRect(44, 38, 12, 8);
+    ctx.fillStyle = "#fff";
+    ctx.fillText("Out", 47, 44);
+    
+    // Connection lines
+    ctx.strokeStyle = "#fff";
+    ctx.beginPath();
+    ctx.moveTo(20, 42);
+    ctx.lineTo(25, 42);
+    ctx.moveTo(39, 42);
+    ctx.lineTo(44, 42);
+    ctx.stroke();
+    
+    // Version/year
+    ctx.font = "6px Arial";
+    ctx.fillText("R2023b", 18, 58);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["matlab_simulink"] = img;
+}
+
+function createSystemArchitecture(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("IR System", 8, 12);
+    
+    // System architecture blocks
+    const blocks = [
+      {x: 8, y: 18, w: 16, h: 8, label: "IR Sensor", color: "#ff4444"},
+      {x: 40, y: 18, w: 16, h: 8, label: "ADC", color: "#44ff44"},
+      {x: 8, y: 32, w: 16, h: 8, label: "DSP", color: "#4444ff"},
+      {x: 40, y: 32, w: 16, h: 8, label: "CPU", color: "#ffaa00"},
+      {x: 24, y: 46, w: 16, h: 8, label: "Display", color: "#aa44ff"},
+    ];
+    
+    blocks.forEach(block => {
+      // Block
+      ctx.fillStyle = block.color;
+      ctx.globalAlpha = 0.3;
+      ctx.fillRect(block.x, block.y, block.w, block.h);
+      ctx.globalAlpha = 1;
+      
+      ctx.strokeStyle = block.color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(block.x, block.y, block.w, block.h);
+      
+      // Label
+      ctx.fillStyle = "#fff";
+      ctx.font = "5px Arial";
+      ctx.fillText(block.label, block.x + 2, block.y + 6);
+    });
+    
+    // Connections
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    // IR Sensor -> ADC
+    ctx.moveTo(24, 22);
+    ctx.lineTo(40, 22);
+    // IR Sensor -> DSP
+    ctx.moveTo(16, 26);
+    ctx.lineTo(16, 32);
+    // ADC -> CPU
+    ctx.moveTo(48, 26);
+    ctx.lineTo(48, 32);
+    // DSP -> Display
+    ctx.moveTo(24, 36);
+    ctx.lineTo(32, 46);
+    // CPU -> Display
+    ctx.moveTo(40, 36);
+    ctx.lineTo(32, 46);
+    ctx.stroke();
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["system_architecture"] = img;
+}
+
+function createRequirementsSpecs(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("Specs", 18, 12);
+    
+    // Requirements table/matrix
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+    
+    // Table grid
+    const rows = 5;
+    const cols = 3;
+    const cellW = 16;
+    const cellH = 7;
+    const startX = 6;
+    const startY = 18;
+    
+    for (let r = 0; r <= rows; r++) {
+      ctx.beginPath();
+      ctx.moveTo(startX, startY + r * cellH);
+      ctx.lineTo(startX + cols * cellW, startY + r * cellH);
+      ctx.stroke();
+    }
+    
+    for (let c = 0; c <= cols; c++) {
+      ctx.beginPath();
+      ctx.moveTo(startX + c * cellW, startY);
+      ctx.lineTo(startX + c * cellW, startY + rows * cellH);
+      ctx.stroke();
+    }
+    
+    // Header
+    ctx.fillStyle = "#4a5568";
+    ctx.fillRect(startX + 1, startY + 1, cols * cellW - 2, cellH - 2);
+    
+    // Some filled cells (requirements status)
+    const filledCells = [
+      {r: 1, c: 0, color: "#00ff88"}, // Verified
+      {r: 1, c: 1, color: "#ffaa00"}, // In progress
+      {r: 2, c: 0, color: "#00ff88"}, // Verified
+      {r: 2, c: 2, color: "#ff4444"}, // Failed
+      {r: 3, c: 1, color: "#00ff88"}, // Verified
+    ];
+    
+    filledCells.forEach(cell => {
+      ctx.fillStyle = cell.color;
+      ctx.globalAlpha = 0.6;
+      ctx.fillRect(
+        startX + cell.c * cellW + 1,
+        startY + cell.r * cellH + 1,
+        cellW - 2,
+        cellH - 2
+      );
+      ctx.globalAlpha = 1;
+    });
+    
+    // Status legend
+    ctx.font = "4px Arial";
+    ctx.fillStyle = "#00ff88";
+    ctx.fillText("✓ PASS", 6, 58);
+    ctx.fillStyle = "#ff4444";
+    ctx.fillText("✗ FAIL", 30, 58);
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["requirements_specs"] = img;
+}
+
+function createIRDetector(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Dark background
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Title
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 8px Arial";
+    ctx.fillText("IR Detector", 8, 12);
+    
+    // Detector housing (rectangular)
+    ctx.fillStyle = "#444";
+    ctx.fillRect(18, 20, 28, 20);
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(18, 20, 28, 20);
+    
+    // Detector window (circular)
+    ctx.fillStyle = "#2a2a2a";
+    ctx.beginPath();
+    ctx.arc(32, 30, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#888";
+    ctx.stroke();
+    
+    // Lens elements (concentric circles)
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.arc(32, 30, 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(32, 30, 4, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Cooling fins (heat dissipation)
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const x = 20 + i * 5;
+      ctx.beginPath();
+      ctx.moveTo(x, 42);
+      ctx.lineTo(x, 48);
+      ctx.stroke();
+    }
+    
+    // Detector specifications
+    ctx.fillStyle = "#aaa";
+    ctx.font = "5px Arial";
+    ctx.fillText("MWIR/LWIR", 15, 52);
+    ctx.fillText("InSb/MCT", 18, 58);
+    
+    // Connection pins
+    ctx.fillStyle = "#d4af37"; // Gold color for pins
+    for (let i = 0; i < 3; i++) {
+      ctx.fillRect(46 + i * 2, 35, 1, 4);
+    }
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["ir_detector"] = img;
 }
 
 export function getAssets(): { [key: string]: HTMLImageElement } {

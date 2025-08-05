@@ -36,7 +36,22 @@
 // 42 = azure_data_factory (non-walkable - Azure Data Factory)
 // 43 = chatbot_ai (non-walkable - Chatbot and conversational AI)
 // 44 = gantt_chart (non-walkable - Project management Gantt chart)
-// 45-60 = Reserved for future R&D System Engineer elements
+// 45-60 = R&D System Engineer Experience tiles (infrared systems and algorithms)
+// 45 = ir_spectrum (non-walkable - Infrared spectrum visualization)
+// 46 = atmospheric_transmission (non-walkable - Atmospheric transmission plot)
+// 47 = multi_camera_array (non-walkable - 360° camera positioning)
+// 48 = leonardo_spa (non-walkable - Leonardo SpA company branding)
+// 49 = object_detection (non-walkable - Object detection with bounding boxes)
+// 50 = kalman_filter (non-walkable - Kalman filter state estimation)
+// 51 = optical_flow (non-walkable - Optical flow motion vectors)
+// 52 = coverage_360 (non-walkable - 360° missile warning coverage)
+// 53 = threat_interface (non-walkable - Threat detection interface)
+// 54 = multi_target_tracking (non-walkable - Multiple target tracking display)
+// 55 = matlab_simulink (non-walkable - MATLAB/Simulink tech stack)
+// 56 = system_architecture (non-walkable - IR system block diagram)
+// 57 = requirements_specs (non-walkable - System requirements matrix)
+// 58 = ir_detector (non-walkable - IR detector hardware visualization)
+// 59-60 = Reserved for future expansion
 
 export const MAP_WIDTH_TILES = 12;
 export const MAP_HEIGHT_TILES = 9;
@@ -70,13 +85,13 @@ export const room2Map: number[][] = [
 // Working Experience Room - Split: Data Scientist (left) + R&D Engineer (right)
 export const room3Map: number[][] = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border
-  [0, 29, 30, 31, 32, 2, 1, 0, 1, 0, 1, 0], // Data Science: NPS vs Energy Cost + Fashion Retail | R&D: TBD
-  [0, 7, 7, 7, 7, 2, 0, 0, 0, 0, 0, 0], // Data Science: Office floor | R&D: TBD
-  [0, 33, 34, 35, 40, 2, 0, 1, 0, 1, 0, 0], // Data Science: Histogram + Box Plot + Recommendation Tree | R&D: TBD
+  [0, 29, 30, 31, 32, 2, 45, 46, 47, 48, 7, 0], // Data Science: NPS + Energy + Fashion + Supply Chain | R&D: IR Spectrum + Atmospheric + Multi-Camera + Leonardo + Office floor
+  [0, 7, 7, 7, 7, 2, 7, 7, 7, 7, 7, 0], // Data Science: Office floor | R&D: Office floor
+  [0, 33, 34, 35, 40, 2, 49, 50, 51, 2, 7, 0], // Data Science: Histogram + Box Plot + Deloitte + Rec Tree | R&D: Object Detection + Kalman + Optical Flow + walkable + office
   [0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6], // Central walkable path + exit door
-  [0, 36, 37, 38, 39, 2, 0, 1, 0, 1, 0, 0], // Data Science: Large BI Dashboard (2 tiles) + Tech stacks | R&D: TBD
-  [0, 7, 11, 12, 7, 2, 0, 0, 0, 0, 0, 0], // Data Science: Desk setup | R&D: TBD
-  [0, 41, 42, 43, 44, 2, 1, 0, 1, 0, 1, 0], // Data Science: Azure ML + Data Factory + Chatbot AI | R&D: TBD
+  [0, 36, 37, 38, 39, 2, 52, 53, 54, 2, 7, 0], // Data Science: Power BI + Tech stacks | R&D: 360° Coverage + Threat Interface + Multi-Target + walkable + office
+  [0, 7, 11, 12, 7, 2, 7, 7, 7, 7, 7, 0], // Data Science: Desk setup | R&D: Office floor
+  [0, 41, 42, 43, 44, 2, 55, 56, 57, 58, 7, 0], // Data Science: Azure + Chatbot + Gantt | R&D: MATLAB + Architecture + Requirements + IR Detector + office
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border
 ];
 
@@ -213,6 +228,6 @@ export const WALKABLE_TILES = [
 ]; // paths, doors, library floor, rug, complete football field (removed bushes)
 
 // Non-walkable tiles (including grass!)
-export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]; // grass, trees, bookshelves, flags, furniture, world map, data science displays (removed bushes)
+export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58]; // grass, trees, bookshelves, flags, furniture, world map, data science displays, R&D system engineer displays, IR detector (removed bushes)
 
 export let currentRoom: Room = rooms.room1;

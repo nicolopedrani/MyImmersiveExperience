@@ -241,6 +241,49 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
         case 44: // Gantt chart project management
           image = assets.gantt_chart;
           break;
+        // R&D System Engineer Experience tiles - Infrared & Defense Systems
+        case 45: // IR spectrum visualization
+          image = assets.ir_spectrum;
+          break;
+        case 46: // Atmospheric transmission plot
+          image = assets.atmospheric_transmission;
+          break;
+        case 47: // Multi-camera array positioning
+          image = assets.multi_camera_array;
+          break;
+        case 48: // Leonardo SpA company branding
+          image = assets.leonardo_spa;
+          break;
+        case 49: // Object detection with bounding boxes
+          image = assets.object_detection;
+          break;
+        case 50: // Kalman filter state estimation
+          image = assets.kalman_filter;
+          break;
+        case 51: // Optical flow motion vectors
+          image = assets.optical_flow;
+          break;
+        case 52: // 360° missile warning coverage
+          image = assets.coverage_360;
+          break;
+        case 53: // Threat detection interface
+          image = assets.threat_interface;
+          break;
+        case 54: // Multiple target tracking display
+          image = assets.multi_target_tracking;
+          break;
+        case 55: // MATLAB/Simulink tech stack
+          image = assets.matlab_simulink;
+          break;
+        case 56: // IR system block diagram
+          image = assets.system_architecture;
+          break;
+        case 57: // System requirements matrix
+          image = assets.requirements_specs;
+          break;
+        case 58: // IR detector hardware
+          image = assets.ir_detector;
+          break;
       }
 
       if (image) {
@@ -346,6 +389,49 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
             break;
           case 44: // Gantt chart
             fallbackColor = "#1a202c";
+            break;
+          // R&D System Engineer Experience fallbacks
+          case 45: // IR spectrum
+            fallbackColor = "#1a1a1a";
+            break;
+          case 46: // Atmospheric transmission
+            fallbackColor = "#1a1a1a";
+            break;
+          case 47: // Multi-camera array
+            fallbackColor = "#1a1a1a";
+            break;
+          case 48: // Leonardo SpA
+            fallbackColor = "#C8102E";
+            break;
+          case 49: // Object detection
+            fallbackColor = "#1a1a1a";
+            break;
+          case 50: // Kalman filter
+            fallbackColor = "#1a1a1a";
+            break;
+          case 51: // Optical flow
+            fallbackColor = "#1a1a1a";
+            break;
+          case 52: // 360° coverage
+            fallbackColor = "#1a1a1a";
+            break;
+          case 53: // Threat interface
+            fallbackColor = "#1a1a1a";
+            break;
+          case 54: // Multi-target tracking
+            fallbackColor = "#1a1a1a";
+            break;
+          case 55: // MATLAB/Simulink
+            fallbackColor = "#e97627";
+            break;
+          case 56: // System architecture
+            fallbackColor = "#1a1a1a";
+            break;
+          case 57: // Requirements specs
+            fallbackColor = "#1a1a1a";
+            break;
+          case 58: // IR detector
+            fallbackColor = "#1a1a1a";
             break;
         }
 
