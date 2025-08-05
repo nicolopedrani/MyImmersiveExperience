@@ -1,0 +1,90 @@
+{
+  "tilesheet": {
+    "image": "assets.png",
+    "width": 512,
+    "height": 832,
+    "columns": 32,
+    "rows": 52,
+    "tileWidth": 16,
+    "tileHeight": 16,
+    "tilesize": 16
+  },
+  "trees": [
+    {
+      "name": "tree_1",
+      "code": "t1",
+      "x": 0,
+      "y": 0,
+      "width": 160,
+      "height": 208
+    },
+    {
+      "name": "tree_2",
+      "code": "t2",
+      "x": 176,
+      "y": 32,
+      "width": 160,
+      "height": 176
+    },
+    {
+      "name": "tree_3",
+      "code": "t3",
+      "x": 368,
+      "y": 32,
+      "width": 128,
+      "height": 176
+    }
+  ],
+  "directions": [
+    {
+      "name": "dir1",
+      "code": "d1",
+      "x": 16,
+      "y": 656,
+      "width": 32,
+      "height": 48
+    },
+    {
+      "name": "dir2",
+      "code": "d2",
+      "x": 64,
+      "y": 656,
+      "width": 32,
+      "height": 48
+    },
+    {
+      "name": "dir3",
+      "code": "d3",
+      "x": 112,
+      "y": 656,
+      "width": 32,
+      "height": 48
+    }
+  ],
+  "bushes": [
+    {
+      "name": "bush1",
+      "code": "b1",
+      "x": 16,
+      "y": 480,
+      "width": 32,
+      "height": 32
+    },
+    {
+      "name": "bush2",
+      "code": "b2",
+      "x": 16,
+      "y": 544,
+      "width": 32,
+      "height": 32
+    },
+    {
+      "name": "bush3",
+      "code": "b3",
+      "x": 16,
+      "y": 608,
+      "width": 32,
+      "height": 32
+    }
+  ]
+}
