@@ -12,15 +12,15 @@ The experience is structured as a **room-based exploration game** where visitors
 
 ### Room Structure
 - **🏠 Central Hub (Main Room)** - Welcome area and navigation center
-- **🎨 Hobbies Room** - Personal interests and activities (football, travel flags, etc.)
-- **💼 Working Experience Room** - Professional background and career highlights *(in development)*
-- **👑 Final Boss Room** - Special interactive challenge or showcase *(planned)*
+- **🎨 Hobbies Room** - Personal interests and activities (football, travel flags, reading)
+- **💼 Working Experience Room** - Professional background with Data Science (Deloitte) and R&D Engineering (Leonardo SpA) sections
+- **👑 Boss Room** - Interactive AI-powered conversation with Nicolo about his CV and experience
 
 ### Current Status
 - ✅ **Central Hub** - Completed with navigation paths
 - ✅ **Hobbies Room** - Completed with football field and travel flags
-- 🚧 **Working Experience Room** - In development
-- 📋 **Final Boss Room** - Planned
+- ✅ **Working Experience Room** - Completed with Data Science and R&D sections
+- ✅ **Boss Room** - Completed with AI-powered conversation system
 
 ## 🛠 Technical Implementation
 
@@ -28,6 +28,7 @@ The experience is structured as a **room-based exploration game** where visitors
 - **TypeScript** - Type-safe development with modern JavaScript features
 - **HTML5 Canvas** - 2D rendering and game graphics
 - **Vite** - Modern build tool with hot reload for development
+- **Hugging Face Transformers.js** - Browser-based AI for intelligent conversation
 - **GitHub Pages** - Hosting and deployment
 
 ### Architecture Highlights
@@ -41,8 +42,33 @@ The experience is structured as a **room-based exploration game** where visitors
 - Real-time character movement and animations
 - Room-to-room navigation system
 - Interactive elements and visual feedback
+- **AI-Powered Conversation System** - Chat with Nicolo about his professional experience
+- **Intelligent Q&A** - Context-aware responses about work, skills, and hobbies
+- **Professional CV Integration** - Dynamic responses based on actual experience
 - Debug tools for development
 - Automated deployment pipeline
+
+## 🤖 AI Conversation System
+
+The **Boss Room** features an innovative AI-powered conversation system that allows recruiters to directly interact with Nicolo:
+
+### Technical Implementation
+- **DistilBERT Model** - Hugging Face Transformers.js for browser-based AI
+- **Context-Aware Responses** - Intelligently matches questions to relevant CV sections
+- **Professional Chat Interface** - Modern modal with real-time conversation
+- **Comprehensive Knowledge Base** - Covers work experience, technical skills, and personal interests
+
+### Conversation Topics
+- **Work Experience** - Deloitte Consulting (Data Science) and Leonardo SpA (R&D Engineering)
+- **Technical Skills** - Python, MATLAB, Machine Learning, Computer Vision, Cloud Platforms
+- **Personal Interests** - Football, International Travel (14 countries), Reading
+- **Projects & Achievements** - Business analytics, defense systems, interactive portfolio
+
+### User Experience
+1. **Proximity Detection** - Approach Nicolo in the Boss Room
+2. **Interactive Prompt** - "Press SPACE to talk to Nicolo"
+3. **Professional Chat** - Real-time AI responses about experience and skills
+4. **Mobile Friendly** - Touch controls and responsive design
 
 ## 🎨 Visual Design
 
@@ -71,11 +97,12 @@ npm run deploy       # Deploy to GitHub Pages
 
 ## 💡 Why This Approach?
 
-1. **Memorable Experience** - Stands out from traditional portfolios
-2. **Technical Demonstration** - Showcases actual coding and design skills
-3. **Interactive Engagement** - Encourages exploration and discovery
-4. **Modern Technology Stack** - Demonstrates familiarity with current tools
-5. **Creative Problem Solving** - Shows ability to think outside the box
+1. **Memorable Experience** - Stands out from traditional portfolios with interactive gameplay
+2. **Technical Demonstration** - Showcases actual coding, AI integration, and design skills
+3. **Interactive Engagement** - Encourages exploration and direct conversation
+4. **Modern Technology Stack** - Demonstrates familiarity with TypeScript, AI, and browser technologies
+5. **Creative Problem Solving** - Shows ability to think outside the box and implement innovative solutions
+6. **AI Innovation** - Integrates cutting-edge browser-based AI for personalized recruiter experience
 
 ## 🔗 Live Experience
 

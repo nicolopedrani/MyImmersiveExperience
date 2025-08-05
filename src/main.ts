@@ -8,7 +8,7 @@ import { setupCanvas, scaleCanvasToWindow } from "./modules/canvas";
 import { getCurrentRoom, initializeRoomSystem } from "./modules/roomManager";
 import { initializeBossInteraction, checkBossProximity } from "./modules/bossInteraction";
 import { ConversationSystem } from "./modules/conversation";
-import { initializeAI, answerQuestion, getFallbackResponse, isAIReady } from "./modules/aiProcessor";
+import { initializeAI, answerQuestion, getFallbackResponse, isAIReady, getCurrentModelInfo, switchModel } from "./modules/aiProcessor";
 
 // --- Setup canvas ---
 const dummyMap = Array(MAP_HEIGHT_TILES)
@@ -732,6 +732,25 @@ loadAssets(() => {
   initializeAI().then((success) => {
     if (success) {
       console.log("AI system ready!");
+      const modelInfo = getCurrentModelInfo();
+      console.log(`🤖 Active Model: ${modelInfo.name}`);
+      
+      // Add developer console commands
+      (window as any).aiCommands = {
+        getModelInfo: getCurrentModelInfo,
+        switchModel: switchModel,
+        availableModels: () => {
+          const info = getCurrentModelInfo();
+          console.log("Available AI models:");
+          Object.entries(info.availableModels).forEach(([key, model]) => {
+            console.log(`  ${key}: ${model.description} (${model.size})`);
+          });
+          console.log("\nUsage: aiCommands.switchModel('fast') or aiCommands.switchModel('quality')");
+        }
+      };
+      
+      console.log("💡 Developer tip: Use aiCommands.availableModels() to see all models");
+      console.log("💡 Use aiCommands.switchModel('quality') to switch models");
     } else {
       console.log("AI system failed to initialize, using fallback responses");
     }
