@@ -19,6 +19,24 @@
 //   20=football_4, 21=football_5, 22=football_6, 23=football_7
 //   24=football_8 (bottom-left), 25=football_9, 26=football_10, 27=football_11 (bottom-right)
 // 28 = world_map (non-walkable - from library.png, perfect for travel hobby)
+// 29-44 = Data Science Experience tiles (diverse analytics visualizations)
+// 29 = nps_chart (non-walkable - NPS analysis line chart)
+// 30 = energy_cost_chart (non-walkable - Energy cost optimization)
+// 31 = fashion_retail_timeseries (non-walkable - Fashion retail forecasting)
+// 32 = distribution_network_map (non-walkable - Supply chain network)
+// 33 = forecast_histogram (non-walkable - Forecast distribution histogram)
+// 34 = box_plot (non-walkable - Statistical box plot analysis)
+// 35 = reserved_tile (reserved for expansion)
+// 36 = powerbi_dashboard_left (non-walkable - Large BI dashboard left half)
+// 37 = powerbi_dashboard_right (non-walkable - Large BI dashboard right half)
+// 38 = python_sklearn (non-walkable - Python/scikit-learn stack)
+// 39 = pytorch_langchain (non-walkable - PyTorch/LangChain stack)
+// 40 = recommendation_tree (non-walkable - Hierarchical recommendation system)
+// 41 = azure_ml (non-walkable - Azure Machine Learning)
+// 42 = azure_data_factory (non-walkable - Azure Data Factory)
+// 43 = chatbot_ai (non-walkable - Chatbot and conversational AI)
+// 44 = reserved_data_science (reserved)
+// 45-60 = Reserved for future R&D System Engineer elements
 
 export const MAP_WIDTH_TILES = 12;
 export const MAP_HEIGHT_TILES = 9;
@@ -49,17 +67,17 @@ export const room2Map: number[][] = [
   [0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0],
 ];
 
-// Work Room - Keep existing
+// Working Experience Room - Split: Data Scientist (left) + R&D Engineer (right)
 export const room3Map: number[][] = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0],
-  [0, 0, 2, 0, 1, 0, 1, 0, 2, 0, 0, 0],
-  [0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0],
-  [0, 0, 2, 1, 0, 0, 0, 1, 2, 2, 2, 6],
-  [0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0],
-  [0, 0, 2, 0, 1, 0, 1, 0, 2, 0, 0, 0],
-  [0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border
+  [0, 29, 30, 31, 32, 2, 1, 0, 1, 0, 1, 0], // Data Science: NPS vs Energy Cost + Fashion Retail | R&D: TBD
+  [0, 7, 7, 7, 7, 2, 0, 0, 0, 0, 0, 0], // Data Science: Office floor | R&D: TBD
+  [0, 33, 34, 35, 40, 2, 0, 1, 0, 1, 0, 0], // Data Science: Histogram + Box Plot + Recommendation Tree | R&D: TBD
+  [0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6], // Central walkable path + exit door
+  [0, 36, 37, 38, 39, 2, 0, 1, 0, 1, 0, 0], // Data Science: Large BI Dashboard (2 tiles) + Tech stacks | R&D: TBD
+  [0, 7, 11, 12, 7, 2, 0, 0, 0, 0, 0, 0], // Data Science: Desk setup | R&D: TBD
+  [0, 41, 42, 43, 44, 2, 1, 0, 1, 0, 1, 0], // Data Science: Azure ML + Data Factory + Chatbot AI | R&D: TBD
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border
 ];
 
 // Hobbies Room - Using your actual tilesheets with world map for travel!
@@ -195,6 +213,6 @@ export const WALKABLE_TILES = [
 ]; // paths, doors, library floor, rug, complete football field (removed bushes)
 
 // Non-walkable tiles (including grass!)
-export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28]; // grass, trees, bookshelves, flags, furniture, world map (removed bushes)
+export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43]; // grass, trees, bookshelves, flags, furniture, world map, data science displays (removed bushes)
 
 export let currentRoom: Room = rooms.room1;

@@ -188,6 +188,53 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
         case 28: // World map from library.png (perfect for travel hobby!)
           image = assets.world_map;
           break;
+        // Data Science Experience tiles - Business Analytics
+        case 29: // NPS analysis chart
+          image = assets.nps_chart;
+          break;
+        case 30: // Energy cost optimization
+          image = assets.energy_cost_chart;
+          break;
+        case 31: // Fashion retail time series
+          image = assets.fashion_retail_timeseries;
+          break;
+        case 32: // Supply chain network map
+          image = assets.distribution_network_map;
+          break;
+        // Statistical Analysis
+        case 33: // Forecast histogram
+          image = assets.forecast_histogram;
+          break;
+        case 34: // Box plot analysis
+          image = assets.box_plot;
+          break;
+        // BI Dashboard (2 tiles)
+        case 36: // Power BI dashboard left
+          image = assets.powerbi_dashboard_left;
+          break;
+        case 37: // Power BI dashboard right
+          image = assets.powerbi_dashboard_right;
+          break;
+        // Tech Stacks
+        case 38: // Python/scikit-learn
+          image = assets.python_sklearn;
+          break;
+        case 39: // PyTorch/LangChain
+          image = assets.pytorch_langchain;
+          break;
+        // Advanced Systems
+        case 40: // Recommendation tree
+          image = assets.recommendation_tree;
+          break;
+        case 41: // Azure Machine Learning
+          image = assets.azure_ml;
+          break;
+        case 42: // Azure Data Factory
+          image = assets.azure_data_factory;
+          break;
+        case 43: // Chatbot AI
+          image = assets.chatbot_ai;
+          break;
       }
 
       if (image) {
@@ -249,6 +296,45 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
           case 28:
             fallbackColor = "#87CEEB";
             break; // Sky blue for world map
+          // Data Science Experience fallbacks
+          case 29: // NPS chart
+            fallbackColor = "#1a202c";
+            break;
+          case 30: // Energy cost
+            fallbackColor = "#ffa500";
+            break;
+          case 31: // Fashion retail
+            fallbackColor = "#e91e63";
+            break;
+          case 32: // Distribution network
+            fallbackColor = "#1a202c";
+            break;
+          case 33: // Forecast histogram
+            fallbackColor = "#3b82f6";
+            break;
+          case 34: // Box plot
+            fallbackColor = "#06b6d4";
+            break;
+          case 36: // Power BI left
+          case 37: // Power BI right
+            fallbackColor = "#f2c811";
+            break;
+          case 38: // Python sklearn
+            fallbackColor = "#3776ab";
+            break;
+          case 39: // PyTorch LangChain
+            fallbackColor = "#ee4c2c";
+            break;
+          case 40: // Recommendation tree
+            fallbackColor = "#1a202c";
+            break;
+          case 41: // Azure ML
+          case 42: // Azure Data Factory
+            fallbackColor = "#0078d4";
+            break;
+          case 43: // Chatbot AI
+            fallbackColor = "#2d3748";
+            break;
         }
 
         ctx.fillStyle = fallbackColor;
@@ -386,27 +472,6 @@ function drawRoomInfo(ctx: CanvasRenderingContext2D, room: any): void {
   }
 }
 
-// Additional helper function to get random flag for variety
-function getRandomFlag(assets: any): HTMLImageElement | null {
-  const flags = [
-    assets.flag_it,
-    assets.flag_fr,
-    assets.flag_de,
-    assets.flag_us,
-    assets.flag_jp,
-    assets.flag_au,
-    assets.flag_es,
-    assets.flag_gb,
-    assets.flag_nl,
-    assets.flag_ch,
-    assets.flag_ma,
-    assets.flag_eg,
-  ].filter(Boolean);
-
-  if (flags.length === 0) return null;
-
-  return flags[Math.floor(Math.random() * flags.length)];
-}
 
 // Usage instructions to replace in main.ts:
 // 1. Import the enhanced modules
