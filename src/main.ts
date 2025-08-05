@@ -284,6 +284,52 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
         case 58: // IR detector hardware
           image = assets.ir_detector;
           break;
+        case 59: // Brick wall
+          image = assets.brick_wall;
+          break;
+        // Individual travel flags
+        case 60: // Australia flag
+          image = assets.flag_au;
+          break;
+        case 61: // United States flag
+          image = assets.flag_us;
+          break;
+        case 62: // Japan flag
+          image = assets.flag_jp;
+          break;
+        case 63: // Vietnam flag
+          image = assets.flag_vn;
+          break;
+        case 64: // Maldives flag
+          image = assets.flag_mv;
+          break;
+        case 65: // Italy flag
+          image = assets.flag_it;
+          break;
+        case 66: // France flag
+          image = assets.flag_fr;
+          break;
+        case 67: // Germany flag
+          image = assets.flag_de;
+          break;
+        case 68: // Spain flag
+          image = assets.flag_es;
+          break;
+        case 69: // United Kingdom flag
+          image = assets.flag_gb;
+          break;
+        case 70: // Netherlands flag
+          image = assets.flag_nl;
+          break;
+        case 71: // Switzerland flag
+          image = assets.flag_ch;
+          break;
+        case 72: // Morocco flag
+          image = assets.flag_ma;
+          break;
+        case 73: // Egypt flag
+          image = assets.flag_eg;
+          break;
       }
 
       if (image) {
@@ -432,6 +478,52 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
             break;
           case 58: // IR detector
             fallbackColor = "#1a1a1a";
+            break;
+          case 59: // Brick wall
+            fallbackColor = "#6e6e6e";
+            break;
+          // Individual travel flags fallbacks
+          case 60: // Australia
+            fallbackColor = "#012169";
+            break;
+          case 61: // United States
+            fallbackColor = "#b22234";
+            break;
+          case 62: // Japan
+            fallbackColor = "#bc002d";
+            break;
+          case 63: // Vietnam
+            fallbackColor = "#da251d";
+            break;
+          case 64: // Maldives
+            fallbackColor = "#d21034";
+            break;
+          case 65: // Italy
+            fallbackColor = "#009246";
+            break;
+          case 66: // France
+            fallbackColor = "#0055a4";
+            break;
+          case 67: // Germany
+            fallbackColor = "#000000";
+            break;
+          case 68: // Spain
+            fallbackColor = "#aa151b";
+            break;
+          case 69: // United Kingdom
+            fallbackColor = "#012169";
+            break;
+          case 70: // Netherlands
+            fallbackColor = "#21468b";
+            break;
+          case 71: // Switzerland
+            fallbackColor = "#ff0000";
+            break;
+          case 72: // Morocco
+            fallbackColor = "#c1272d";
+            break;
+          case 73: // Egypt
+            fallbackColor = "#ce1126";
             break;
         }
 

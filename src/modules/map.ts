@@ -51,7 +51,13 @@
 // 56 = system_architecture (non-walkable - IR system block diagram)
 // 57 = requirements_specs (non-walkable - System requirements matrix)
 // 58 = ir_detector (non-walkable - IR detector hardware visualization)
-// 59-60 = Reserved for future expansion
+// 59 = brick_wall (non-walkable - Grey brick wall for room boundaries)
+// 60-73 = Individual travel flags (non-walkable - Unique country flags)
+// 60 = flag_au (Australia), 61 = flag_us (United States), 62 = flag_jp (Japan)
+// 63 = flag_vn (Vietnam), 64 = flag_mv (Maldives), 65 = flag_it (Italy)
+// 66 = flag_fr (France), 67 = flag_de (Germany), 68 = flag_es (Spain)
+// 69 = flag_gb (United Kingdom), 70 = flag_nl (Netherlands), 71 = flag_ch (Switzerland)
+// 72 = flag_ma (Morocco), 73 = flag_eg (Egypt)
 
 export const MAP_WIDTH_TILES = 12;
 export const MAP_HEIGHT_TILES = 9;
@@ -84,29 +90,28 @@ export const room2Map: number[][] = [
 
 // Working Experience Room - Split: Data Scientist (left) + R&D Engineer (right)
 export const room3Map: number[][] = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border
-  [0, 29, 30, 31, 32, 2, 45, 46, 47, 48, 7, 0], // Data Science: NPS + Energy + Fashion + Supply Chain | R&D: IR Spectrum + Atmospheric + Multi-Camera + Leonardo + Office floor
-  [0, 7, 7, 7, 7, 2, 7, 12, 11, 7, 7, 0], // Data Science: Office floor | R&D: Office floor + table + chair
-  [0, 33, 34, 35, 40, 2, 49, 50, 51, 2, 7, 0], // Data Science: Histogram + Box Plot + Deloitte + Rec Tree | R&D: Object Detection + Kalman + Optical Flow + walkable + office
-  [0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6], // Central walkable path + exit door
-  [0, 36, 37, 38, 39, 2, 52, 53, 54, 2, 7, 0], // Data Science: Power BI + Tech stacks | R&D: 360° Coverage + Threat Interface + Multi-Target + walkable + office
-  [0, 7, 11, 12, 7, 2, 7, 7, 7, 7, 7, 0], // Data Science: Desk setup | R&D: Office floor
-  [0, 41, 42, 43, 44, 2, 55, 56, 57, 58, 7, 0], // Data Science: Azure + Chatbot + Gantt | R&D: MATLAB + Architecture + Requirements + IR Detector + office
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border
+  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
+  [59, 29, 30, 31, 32, 2, 45, 46, 47, 48, 7, 59], // Data Science: NPS + Energy + Fashion + Supply Chain | R&D: IR Spectrum + Atmospheric + Multi-Camera + Leonardo + Office floor
+  [59, 7, 7, 7, 7, 2, 7, 12, 11, 7, 7, 59], // Data Science: Office floor | R&D: Office floor + table + chair
+  [59, 33, 34, 35, 40, 2, 49, 50, 51, 2, 7, 59], // Data Science: Histogram + Box Plot + Deloitte + Rec Tree | R&D: Object Detection + Kalman + Optical Flow + walkable + office
+  [59, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6], // Central walkable path + exit door
+  [59, 36, 37, 38, 39, 2, 52, 53, 54, 2, 7, 59], // Data Science: Power BI + Tech stacks | R&D: 360° Coverage + Threat Interface + Multi-Target + walkable + office
+  [59, 7, 11, 12, 7, 2, 7, 7, 7, 7, 7, 59], // Data Science: Desk setup | R&D: Office floor
+  [59, 41, 42, 43, 44, 2, 55, 56, 57, 58, 7, 59], // Data Science: Azure + Chatbot + Gantt | R&D: MATLAB + Architecture + Requirements + IR Detector + office
+  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
 ];
 
-// Hobbies Room - Using your actual tilesheets with world map for travel!
+// Hobbies Room - Centered layout with brick walls and unique travel flags
 export const room4Map: number[][] = [
-  // Top row: Library area with bookshelves and travel flags
-  [0, 8, 8, 8, 0, 10, 10, 10, 0, 8, 8, 0], // Bookshelves + flags on grass
-  [0, 7, 7, 7, 0, 7, 7, 7, 0, 7, 7, 0], // Library walkable floor
-  [0, 7, 11, 12, 2, 7, 28, 7, 2, 10, 10, 0], // Reading area with WORLD MAP for travel!
-  [0, 13, 7, 7, 2, 2, 2, 2, 2, 7, 7, 0], // Library rug + central path
-  [6, 2, 2, 16, 17, 18, 19, 2, 2, 2, 2, 0], // Entrance + football field row 1 (4x3 grid)
-  [0, 2, 2, 20, 21, 22, 23, 2, 10, 10, 10, 0], // Football field row 2 + travel flags
-  [0, 2, 2, 24, 25, 26, 27, 2, 7, 7, 7, 0], // Football field row 3 + library floor
-  [0, 2, 2, 2, 2, 2, 2, 2, 7, 8, 7, 0], // Path + library area
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border (non-walkable)
+  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
+  [59, 8, 8, 65, 7, 28, 7, 61, 8, 8, 7, 59], // Library: Bookshelves + Italy flag + WORLD MAP + US flag + bookshelves
+  [59, 7, 11, 12, 2, 2, 2, 2, 7, 7, 7, 59], // Reading area: table + chair + central path + library floor
+  [59, 13, 7, 7, 16, 17, 18, 19, 2, 66, 62, 59], // Library rug + football field row 1 + France & Japan flags
+  [6, 2, 2, 2, 20, 21, 22, 23, 2, 2, 2, 59], // Entrance + football field row 2 + path
+  [59, 67, 7, 7, 24, 25, 26, 27, 2, 7, 7, 59], // Germany flag + football field row 3 + library floor
+  [59, 7, 7, 8, 2, 2, 2, 2, 60, 68, 7, 59], // Library floor + bookshelf + central path + Australia & Spain flags
+  [59, 8, 73, 7, 7, 7, 7, 7, 7, 8, 7, 59], // Bookshelves + Egypt flag + library floor + bookshelves
+  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
 ];
 
 export interface Room {
@@ -228,6 +233,6 @@ export const WALKABLE_TILES = [
 ]; // paths, doors, library floor, rug, complete football field (removed bushes)
 
 // Non-walkable tiles (including grass!)
-export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58]; // grass, trees, bookshelves, flags, furniture, world map, data science displays, R&D system engineer displays, IR detector (removed bushes)
+export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73]; // grass, trees, bookshelves, flags, furniture, world map, data science displays, R&D system engineer displays, IR detector, brick walls, individual country flags (removed bushes)
 
 export let currentRoom: Room = rooms.room1;

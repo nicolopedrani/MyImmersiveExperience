@@ -1313,6 +1313,12 @@ function createRDTiles(): void {
   
   // Additional hardware tile
   createIRDetector(); // tile 58
+  
+  // Room infrastructure
+  createBrickWall(); // tile 59
+  
+  // Individual travel flags
+  createIndividualFlags(); // tiles 60-73
 
   console.log("✅ R&D System Engineer visualization tiles created");
 }
@@ -2180,6 +2186,254 @@ function createIRDetector(): void {
   const img = new Image();
   img.src = canvas.toDataURL();
   assets["ir_detector"] = img;
+}
+
+function createBrickWall(): void {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Base grey wall color
+    ctx.fillStyle = "#6e6e6e";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Brick pattern variables
+    const brickWidth = 16;
+    const brickHeight = 8;
+    const mortarWidth = 1;
+    
+    // Mortar color (slightly darker)
+    ctx.fillStyle = "#5a5a5a";
+    
+    // Draw horizontal mortar lines
+    for (let y = 0; y < 64; y += brickHeight + mortarWidth) {
+      ctx.fillRect(0, y, 64, mortarWidth);
+    }
+    
+    // Draw vertical mortar lines with staggered pattern
+    for (let row = 0; row < Math.ceil(64 / (brickHeight + mortarWidth)); row++) {
+      const y = row * (brickHeight + mortarWidth);
+      const offset = (row % 2) * (brickWidth / 2); // Stagger every other row
+      
+      for (let x = offset; x < 64 + brickWidth; x += brickWidth + mortarWidth) {
+        ctx.fillRect(x, y, mortarWidth, brickHeight + mortarWidth);
+      }
+    }
+    
+    // Add some texture variation to bricks
+    ctx.globalAlpha = 0.1;
+    for (let row = 0; row < Math.ceil(64 / (brickHeight + mortarWidth)); row++) {
+      for (let col = 0; col < Math.ceil(64 / (brickWidth + mortarWidth)); col++) {
+        const x = col * (brickWidth + mortarWidth) + (row % 2) * (brickWidth / 2);
+        const y = row * (brickHeight + mortarWidth);
+        
+        // Random brightness variation
+        const brightness = Math.random() * 0.3 - 0.15;
+        ctx.fillStyle = brightness > 0 ? "#ffffff" : "#000000";
+        ctx.fillRect(x + mortarWidth, y + mortarWidth, brickWidth - mortarWidth, brickHeight - mortarWidth);
+      }
+    }
+    ctx.globalAlpha = 1;
+    
+    // Add subtle shadow effect
+    ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+    ctx.fillRect(62, 0, 2, 64); // Right shadow
+    ctx.fillRect(0, 62, 64, 2); // Bottom shadow
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["brick_wall"] = img;
+}
+
+function createIndividualFlags(): void {
+  const flagData = [
+    { name: "flag_au", code: "AU", colors: ["#012169", "#ffffff", "#ff0000"] },
+    { name: "flag_us", code: "US", colors: ["#b22234", "#ffffff", "#3c3b6e"] },
+    { name: "flag_jp", code: "JP", colors: ["#ffffff", "#bc002d"] },
+    { name: "flag_vn", code: "VN", colors: ["#da251d", "#ffff00"] },
+    { name: "flag_mv", code: "MV", colors: ["#d21034", "#007e3a", "#ffffff"] },
+    { name: "flag_it", code: "IT", colors: ["#009246", "#ffffff", "#ce2b37"] },
+    { name: "flag_fr", code: "FR", colors: ["#0055a4", "#ffffff", "#ef4135"] },
+    { name: "flag_de", code: "DE", colors: ["#000000", "#dd0000", "#ffce00"] },
+    { name: "flag_es", code: "ES", colors: ["#aa151b", "#f1bf00", "#aa151b"] },
+    { name: "flag_gb", code: "GB", colors: ["#012169", "#ffffff", "#c8102e"] },
+    { name: "flag_nl", code: "NL", colors: ["#21468b", "#ffffff", "#ae1c28"] },
+    { name: "flag_ch", code: "CH", colors: ["#ff0000", "#ffffff"] },
+    { name: "flag_ma", code: "MA", colors: ["#c1272d", "#006233"] },
+    { name: "flag_eg", code: "EG", colors: ["#ce1126", "#ffffff", "#000000"] }
+  ];
+
+  flagData.forEach((flag) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+
+    if (ctx) {
+      // Create a simple flag representation
+      ctx.fillStyle = flag.colors[0];
+      ctx.fillRect(0, 0, 64, 64);
+      
+      // Add stripes or patterns based on flag
+      if (flag.colors.length >= 2) {
+        if (flag.code === "IT" || flag.code === "FR" || flag.code === "NL") {
+          // Vertical stripes
+          ctx.fillStyle = flag.colors[1];
+          ctx.fillRect(21, 0, 22, 64);
+          if (flag.colors[2]) {
+            ctx.fillStyle = flag.colors[2];
+            ctx.fillRect(43, 0, 21, 64);
+          }
+        } else if (flag.code === "DE" || flag.code === "EG") {
+          // Horizontal stripes
+          ctx.fillStyle = flag.colors[1];
+          ctx.fillRect(0, 21, 64, 22);
+          if (flag.colors[2]) {
+            ctx.fillStyle = flag.colors[2];
+            ctx.fillRect(0, 43, 64, 21);
+          }
+        } else if (flag.code === "US") {
+          // USA flag - white background first
+          ctx.fillStyle = flag.colors[1]; // White
+          ctx.fillRect(0, 0, 64, 64);
+          
+          // Red stripes
+          ctx.fillStyle = flag.colors[0]; // Red
+          for (let i = 0; i < 7; i++) {
+            ctx.fillRect(0, i * 10 + 2, 64, 5);
+          }
+          
+          // Blue canton (top-left rectangle)
+          ctx.fillStyle = flag.colors[2]; // Blue
+          ctx.fillRect(0, 0, 28, 36);
+          
+          // White stars on blue canton
+          ctx.fillStyle = flag.colors[1]; // White
+          ctx.font = "4px Arial";
+          for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 6; col++) {
+              if ((row + col) % 2 === 0) {
+                ctx.fillText("★", 3 + col * 4, 6 + row * 6);
+              }
+            }
+          }
+        } else if (flag.code === "AU") {
+          // Australian flag - blue background
+          ctx.fillStyle = flag.colors[0]; // Blue
+          ctx.fillRect(0, 0, 64, 64);
+          
+          // Union Jack in top-left corner (32x32 pixels)
+          const ujWidth = 32;
+          const ujHeight = 32;
+          
+          // White background for Union Jack
+          ctx.fillStyle = flag.colors[1]; // White
+          ctx.fillRect(0, 0, ujWidth, ujHeight);
+          
+          // Blue background
+          ctx.fillStyle = flag.colors[0]; // Blue
+          ctx.fillRect(0, 0, ujWidth, ujHeight);
+          
+          // White diagonal crosses (St. Andrew's Cross)
+          ctx.fillStyle = flag.colors[1]; // White
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(0, 0); ctx.lineTo(ujWidth, ujHeight);
+          ctx.moveTo(0, ujHeight); ctx.lineTo(ujWidth, 0);
+          ctx.stroke();
+          
+          // White vertical and horizontal crosses (St. George's Cross)
+          ctx.fillStyle = flag.colors[1]; // White
+          ctx.fillRect(0, ujHeight/2 - 2, ujWidth, 4); // Horizontal white
+          ctx.fillRect(ujWidth/2 - 2, 0, 4, ujHeight); // Vertical white
+          
+          // Red crosses (St. George's Cross)
+          ctx.fillStyle = flag.colors[2]; // Red
+          ctx.fillRect(0, ujHeight/2 - 1, ujWidth, 2); // Horizontal red
+          ctx.fillRect(ujWidth/2 - 1, 0, 2, ujHeight); // Vertical red
+          
+          // Red diagonal lines (thinner, offset)
+          ctx.strokeStyle = flag.colors[2]; // Red
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          // Top-left to bottom-right diagonal
+          ctx.moveTo(2, 0); ctx.lineTo(ujWidth, ujHeight - 2);
+          ctx.moveTo(0, 2); ctx.lineTo(ujWidth - 2, ujHeight);
+          // Top-right to bottom-left diagonal  
+          ctx.moveTo(ujWidth - 2, 0); ctx.lineTo(0, ujHeight - 2);
+          ctx.moveTo(ujWidth, 2); ctx.lineTo(2, ujHeight);
+          ctx.stroke();
+          
+          // Southern Cross stars
+          ctx.fillStyle = flag.colors[1]; // White
+          ctx.font = "6px Arial";
+          ctx.fillText("★", 40, 20);
+          ctx.fillText("★", 50, 30);
+          ctx.fillText("★", 45, 40);
+          ctx.fillText("★", 55, 50);
+          ctx.fillText("★", 35, 55);
+        } else if (flag.code === "GB") {
+          // Union Jack pattern
+          ctx.fillStyle = flag.colors[0];
+          ctx.fillRect(0, 0, 64, 64);
+          ctx.fillStyle = flag.colors[1];
+          ctx.fillRect(0, 28, 64, 8);
+          ctx.fillRect(28, 0, 8, 64);
+          ctx.fillStyle = flag.colors[2];
+          ctx.fillRect(0, 30, 64, 4);
+          ctx.fillRect(30, 0, 4, 64);
+        } else if (flag.code === "JP") {
+          // Red circle on white
+          ctx.fillStyle = flag.colors[0];
+          ctx.fillRect(0, 0, 64, 64);
+          ctx.fillStyle = flag.colors[1];
+          ctx.beginPath();
+          ctx.arc(32, 32, 16, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (flag.code === "ES") {
+          // Spanish flag - red-yellow-red horizontal stripes
+          // Top red stripe (1/4 of height)
+          ctx.fillStyle = flag.colors[0]; // Red
+          ctx.fillRect(0, 0, 64, 16);
+          
+          // Middle yellow stripe (1/2 of height - thicker)
+          ctx.fillStyle = flag.colors[1]; // Yellow
+          ctx.fillRect(0, 16, 64, 32);
+          
+          // Bottom red stripe (1/4 of height)
+          ctx.fillStyle = flag.colors[2]; // Red
+          ctx.fillRect(0, 48, 64, 16);
+        } else if (flag.code === "CH") {
+          // White cross on red
+          ctx.fillStyle = flag.colors[0];
+          ctx.fillRect(0, 0, 64, 64);
+          ctx.fillStyle = flag.colors[1];
+          ctx.fillRect(0, 24, 64, 16);
+          ctx.fillRect(24, 0, 16, 64);
+        } else {
+          // Default horizontal split
+          ctx.fillStyle = flag.colors[1];
+          ctx.fillRect(0, 32, 64, 32);
+        }
+      }
+      
+      // Add country code text
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 8px Arial";
+      ctx.textAlign = "center";
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.strokeText(flag.code, 32, 58);
+      ctx.fillText(flag.code, 32, 58);
+    }
+
+    const img = new Image();
+    img.src = canvas.toDataURL();
+    assets[flag.name] = img;
+  });
 }
 
 export function getAssets(): { [key: string]: HTMLImageElement } {
