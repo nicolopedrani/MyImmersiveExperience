@@ -86,7 +86,7 @@ export const room2Map: number[][] = [
 export const room3Map: number[][] = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border
   [0, 29, 30, 31, 32, 2, 45, 46, 47, 48, 7, 0], // Data Science: NPS + Energy + Fashion + Supply Chain | R&D: IR Spectrum + Atmospheric + Multi-Camera + Leonardo + Office floor
-  [0, 7, 7, 7, 7, 2, 7, 7, 7, 7, 7, 0], // Data Science: Office floor | R&D: Office floor
+  [0, 7, 7, 7, 7, 2, 7, 12, 11, 7, 7, 0], // Data Science: Office floor | R&D: Office floor + table + chair
   [0, 33, 34, 35, 40, 2, 49, 50, 51, 2, 7, 0], // Data Science: Histogram + Box Plot + Deloitte + Rec Tree | R&D: Object Detection + Kalman + Optical Flow + walkable + office
   [0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6], // Central walkable path + exit door
   [0, 36, 37, 38, 39, 2, 52, 53, 54, 2, 7, 0], // Data Science: Power BI + Tech stacks | R&D: 360° Coverage + Threat Interface + Multi-Target + walkable + office
