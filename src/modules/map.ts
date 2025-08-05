@@ -58,6 +58,8 @@
 // 66 = flag_fr (France), 67 = flag_de (Germany), 68 = flag_es (Spain)
 // 69 = flag_gb (United Kingdom), 70 = flag_nl (Netherlands), 71 = flag_ch (Switzerland)
 // 72 = flag_ma (Morocco), 73 = flag_eg (Egypt)
+// 74 = main_guy (non-walkable - Boss character from MainGuySpriteSheet.png)
+// 75 = flower (non-walkable - Decorative flowers with grass background)
 
 export const MAP_WIDTH_TILES = 12;
 export const MAP_HEIGHT_TILES = 9;
@@ -75,17 +77,17 @@ export const room1Map: number[][] = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border (non-walkable)
 ];
 
-// Boss Room - Keep existing
+// Boss Room - Natural environment with straight path to centered character
 export const room2Map: number[][] = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-  [0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0],
-  [0, 0, 2, 0, 0, 1, 0, 0, 2, 0, 0, 0],
-  [0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0],
-  [0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0],
-  [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Standard grass background (non-walkable)
+  [0, 0, 0, 0, 0, 74, 0, 0, 0, 0, 0, 0], // MAIN CHARACTER centered (x=5)
+  [0, 75, 0, 0, 0, 2, 0, 0, 0, 75, 0, 0], // Straight path with decorative flowers
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Straight path continues
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Straight path continues
+  [0, 75, 0, 0, 0, 2, 0, 0, 0, 75, 0, 0], // Straight path with decorative flowers
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Straight path continues
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Straight path approaches entrance
+  [0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0], // Entrance door with grass
 ];
 
 // Working Experience Room - Split: Data Scientist (left) + R&D Engineer (right)
@@ -230,9 +232,9 @@ export const rooms: { [key: string]: Room } = {
 // IMPORTANT: Grass (tile 0) is NOT walkable as requested
 export const WALKABLE_TILES = [
   2, 3, 4, 5, 6, 7, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-]; // paths, doors, library floor, rug, complete football field (removed bushes)
+]; // paths, doors, library floor, rug, complete football field (removed grass_middle)
 
 // Non-walkable tiles (including grass!)
-export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73]; // grass, trees, bookshelves, flags, furniture, world map, data science displays, R&D system engineer displays, IR detector, brick walls, individual country flags (removed bushes)
+export const NON_WALKABLE_TILES = [0, 1, 8, 10, 11, 12, 14, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75]; // grass, trees, bookshelves, flags, furniture, world map, data science displays, R&D system engineer displays, IR detector, brick walls, individual country flags, main guy character, flowers (removed bushes)
 
 export let currentRoom: Room = rooms.room1;

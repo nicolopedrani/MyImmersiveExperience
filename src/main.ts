@@ -330,6 +330,13 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
         case 73: // Egypt flag
           image = assets.flag_eg;
           break;
+        // Boss room tiles
+        case 74: // MainGuy character
+          image = assets.main_guy;
+          break;
+        case 75: // Flower decoration
+          image = assets.flower;
+          break;
       }
 
       if (image) {
@@ -524,6 +531,13 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
             break;
           case 73: // Egypt
             fallbackColor = "#ce1126";
+            break;
+          // Boss room tiles fallbacks
+          case 74: // MainGuy character
+            fallbackColor = "#4169e1";
+            break;
+          case 75: // Flower decoration
+            fallbackColor = "#ff69b4";
             break;
         }
 

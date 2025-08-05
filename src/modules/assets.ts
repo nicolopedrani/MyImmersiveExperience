@@ -4,6 +4,7 @@ import grassImg from "../../assets/Grass_Middle.png";
 import pathImg from "../../assets/Path_Middle.png";
 import oakTreeImg from "../../assets/Oak_Tree.png";
 import playerImg from "../../assets/Player.png";
+import mainGuySpriteSheetImg from "../../assets/MainGuySpriteSheet.png";
 
 // Import your tilesheets
 import assetsImg from "../../assets/assets.png";
@@ -131,6 +132,7 @@ export function loadAssets(callback: () => void): void {
   loadImage("path", pathImg);
   loadImage("oak_tree_original", oakTreeImg);
   loadImage("player_sprite_sheet", playerImg);
+  loadImage("main_guy_sprite_sheet", mainGuySpriteSheetImg);
 
   // Load your tilesheets
   loadImage("assets_tilesheet", assetsImg);
@@ -1319,6 +1321,9 @@ function createRDTiles(): void {
   
   // Individual travel flags
   createIndividualFlags(); // tiles 60-73
+  
+  // Boss room elements
+  createBossRoomTiles(); // tiles 74-76
 
   console.log("✅ R&D System Engineer visualization tiles created");
 }
@@ -2435,6 +2440,118 @@ function createIndividualFlags(): void {
     assets[flag.name] = img;
   });
 }
+
+function createBossRoomTiles(): void {
+  console.log("🎯 Creating Boss Room tiles...");
+  
+  createMainGuyCharacter(); // tile 74
+  createFlowerDecoration(); // tile 75  
+  
+  console.log("✅ Boss Room tiles created");
+}
+
+function createMainGuyCharacter(): void {
+  // Create MainGuy character sprite from MainGuySpriteSheet.png (row 0, col 0, 36x36 pixels)
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Green grass background to match surrounding grass
+    ctx.fillStyle = "#228B22";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Use the loaded MainGuy sprite sheet
+    const spriteSheet = assets["main_guy_sprite_sheet"];
+    if (spriteSheet) {
+      // Extract sprite from row 0, col 0 (36x36 pixels)
+      const spriteSize = 36;
+      const sourceX = 0;
+      const sourceY = 0;
+      
+      // Scale and center the sprite
+      const scale = 1.5; // Make character slightly larger
+      const spriteWidth = spriteSize * scale;
+      const spriteHeight = spriteSize * scale;
+      const centerX = (64 - spriteWidth) / 2;
+      const centerY = (64 - spriteHeight) / 2;
+      
+      // Draw the character sprite centered on grass background
+      ctx.drawImage(
+        spriteSheet,
+        sourceX, sourceY, spriteSize, spriteSize,
+        centerX, centerY, spriteWidth, spriteHeight
+      );
+    } else {
+      // Fallback: simple character representation on grass
+      ctx.fillStyle = "#fff";
+      ctx.font = "12px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("BOSS", 32, 35);
+    }
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["main_guy"] = img;
+}
+
+function createFlowerDecoration(): void {
+  // Create decorative flower sprites for natural environment
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+
+  if (ctx) {
+    // Green grass background to match surrounding grass
+    ctx.fillStyle = "#228B22";
+    ctx.fillRect(0, 0, 64, 64);
+    
+    // Create multiple small flowers scattered across the tile
+    const flowers = [
+      {x: 15, y: 20, color: "#ff69b4", size: 4},
+      {x: 35, y: 15, color: "#ffd700", size: 3},
+      {x: 45, y: 35, color: "#ff6347", size: 4},
+      {x: 20, y: 45, color: "#9370db", size: 3},
+      {x: 50, y: 50, color: "#00ced1", size: 3}
+    ];
+    
+    flowers.forEach(flower => {
+      // Flower petals
+      ctx.fillStyle = flower.color;
+      for (let i = 0; i < 5; i++) {
+        const angle = (i * Math.PI * 2) / 5;
+        const petalX = flower.x + Math.cos(angle) * flower.size;
+        const petalY = flower.y + Math.sin(angle) * flower.size;
+        
+        ctx.beginPath();
+        ctx.arc(petalX, petalY, flower.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Flower center
+      ctx.fillStyle = "#ffff00";
+      ctx.beginPath();
+      ctx.arc(flower.x, flower.y, flower.size / 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Small stem
+      ctx.strokeStyle = "#228b22";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(flower.x, flower.y + flower.size / 3);
+      ctx.lineTo(flower.x, flower.y + flower.size + 2);
+      ctx.stroke();
+    });
+  }
+
+  const img = new Image();
+  img.src = canvas.toDataURL();
+  assets["flower"] = img;
+}
+
 
 export function getAssets(): { [key: string]: HTMLImageElement } {
   return assets;
