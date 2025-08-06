@@ -1,10 +1,10 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  // Sostituisci 'nome-repo' con il nome esatto del tuo repository GitHub
   base: "/MyImmersiveExperience/",
-
-  // Altre configurazioni personalizzate (se ti servono)
-  // plugins: [],
-  // resolve: { alias: { ... } },
+  
+  // Complete exclusion of transformers from bundling
+  optimizeDeps: {
+    exclude: ["@xenova/transformers", "onnxruntime-web", "onnxruntime-node", "onnxruntime-common"]
+  }
 });

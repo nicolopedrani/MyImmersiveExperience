@@ -1,6 +1,8 @@
 // modules/aiProcessor.ts - AI processing with Transformers.js integration
 
-import { pipeline } from "@xenova/transformers";
+// Dynamic import from CDN to avoid bundling issues
+// import { pipeline } from "@xenova/transformers";
+let pipeline: any;
 
 interface CVContext {
   personalInfo: string;
@@ -32,11 +34,12 @@ const AI_MODELS: { [key: string]: any } = {
   }
 };
 
-// Configuration - you can change preferredModel to 'qwen' to use Qwen1.5-0.5B-Chat by default
+// Configuration - temporarily using fallback only due to ONNX issues
 const MODEL_CONFIG = {
   preferredModel: 'qwen', // Change to 'distilbert' if you prefer the Q&A model
   fallbackModels: ['distilbert'],
-  enableModelFallback: true
+  enableModelFallback: true,
+  useOnlyFallback: true // Temporary flag to test without AI loading
 };
 
 // CV context data extracted from the portfolio game content
@@ -223,6 +226,42 @@ async function loadModel(modelKey: string): Promise<boolean> {
 export async function initializeAI(): Promise<boolean> {
   try {
     console.log("🔧 Initializing AI pipeline...");
+    
+    // Temporary: Skip AI loading due to ONNX issues, use fallback only
+    if (MODEL_CONFIG.useOnlyFallback) {
+      console.log("🔄 Using fallback responses only (AI models disabled temporarily)");
+      isModelLoaded = false;
+      currentModelName = "Fallback System";
+      currentModelType = "fallback";
+      console.log("✅ Fallback system initialized successfully!");
+      return true;
+    }
+    
+    // Load transformers.js from CDN with environment configuration
+    if (!pipeline) {
+      console.log("📥 Loading transformers.js from CDN...");
+      
+      // Set environment to web before loading
+      globalThis.env = globalThis.env || {};
+      globalThis.env.backends = {
+        onnx: {
+          wasm: {
+            numThreads: 1,
+            wasmPaths: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/'
+          }
+        }
+      };
+      
+      const transformers = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/+esm');
+      pipeline = transformers.pipeline;
+      
+      // Set environment to use CPU only
+      transformers.env.backends.onnx.wasm.numThreads = 1;
+      transformers.env.allowLocalModels = false;
+      
+      console.log("✅ Transformers.js loaded successfully");
+    }
+    
     const preferredModel = AI_MODELS[MODEL_CONFIG.preferredModel];
     console.log(`🎯 Loading ${preferredModel.description}...`);
 
