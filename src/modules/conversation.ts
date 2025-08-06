@@ -79,7 +79,7 @@ export class ConversationSystem {
           font-weight: bold;
           cursor: pointer;
         ">
-          <option value="qwen">💬 Qwen Chat (~500MB)</option>
+          <option value="qwen">💬 Qwen 2.5 Chat (~500MB)</option>
           <option value="distilbert">❓ DistilBERT Q&A (~65MB)</option>
         </select>
       </div>
@@ -205,15 +205,24 @@ export class ConversationSystem {
       console.log(`🔄 Player selected AI model: ${selectedModel}`);
       
       if (this.onModelSwitchCallback) {
-        // Show loading message
-        this.addMessage({
-          type: 'ai',
-          content: `🔄 Switching to ${selectedModel === 'qwen' ? 'Qwen Chat' : 'DistilBERT Q&A'} model, please wait...`,
-          timestamp: new Date()
-        });
+        // Disable input during model loading
+        if (this.inputElement) {
+          this.inputElement.disabled = true;
+          this.inputElement.placeholder = "Model loading, please wait...";
+        }
+        
+        // Disable model selector during loading
+        modelSelector.disabled = true;
+        
+        // Show loading message with progress bar
+        const loadingMessageId = this.addLoadingMessage(selectedModel);
         
         try {
           const success = await this.onModelSwitchCallback(selectedModel);
+          
+          // Remove loading message
+          this.removeMessage(loadingMessageId);
+          
           if (success) {
             this.addMessage({
               type: 'ai',
@@ -231,6 +240,10 @@ export class ConversationSystem {
           }
         } catch (error) {
           console.error("Error switching model:", error);
+          
+          // Remove loading message
+          this.removeMessage(loadingMessageId);
+          
           this.addMessage({
             type: 'ai',
             content: "❌ Error occurred while switching models. I'll continue using the current model.",
@@ -239,6 +252,13 @@ export class ConversationSystem {
           // Reset selector to previous model
           modelSelector.value = selectedModel === 'qwen' ? 'distilbert' : 'qwen';
         }
+        
+        // Re-enable input and model selector
+        if (this.inputElement) {
+          this.inputElement.disabled = false;
+          this.inputElement.placeholder = "Ask me about my experience, skills, or interests...";
+        }
+        modelSelector.disabled = false;
       }
     });
 
@@ -381,6 +401,104 @@ export class ConversationSystem {
 
     // Scroll to bottom
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+  }
+
+  private addLoadingMessage(selectedModel: string): string {
+    if (!this.messagesContainer) return '';
+
+    const loadingId = `loading-${Date.now()}`;
+    const messageElement = document.createElement("div");
+    messageElement.id = loadingId;
+    messageElement.style.cssText = `
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 10px;
+    `;
+
+    const bubble = document.createElement("div");
+    bubble.style.cssText = `
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+      background: #2a2a3e;
+      color: white;
+      border-bottom-left-radius: 6px;
+      border: 1px solid #444;
+    `;
+
+    const modelName = selectedModel === 'qwen' ? 'Qwen 2.5 0.5B Instruct (~500MB)' : 'DistilBERT Q&A (~65MB)';
+    
+    bubble.innerHTML = `
+      <div id="loading-title-${loadingId}">🔄 Loading ${modelName}...</div>
+      <div style="margin-top: 8px;">
+        <div style="width: 100%; background: #444; border-radius: 10px; height: 6px;">
+          <div id="progress-bar-${loadingId}" style="width: 0%; background: linear-gradient(90deg, #FFD700, #FFA500); height: 100%; border-radius: 10px; transition: width 0.3s ease;"></div>
+        </div>
+        <div id="progress-info-${loadingId}" style="font-size: 11px; color: #888; margin-top: 4px; display: flex; justify-content: space-between;">
+          <span>Initializing download...</span>
+          <span>0%</span>
+        </div>
+        <div id="speed-info-${loadingId}" style="font-size: 10px; color: #aaa; margin-top: 2px; text-align: center;">
+          Preparing to download model files...
+        </div>
+      </div>
+    `;
+
+    messageElement.appendChild(bubble);
+    this.messagesContainer.appendChild(messageElement);
+
+    // Scroll to bottom
+    this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+
+    // Store loading ID for real progress updates
+    (messageElement as any).loadingId = loadingId;
+
+    return loadingId;
+  }
+
+  private removeMessage(messageId: string): void {
+    const messageElement = document.getElementById(messageId);
+    if (messageElement) {
+      messageElement.remove();
+    }
+  }
+
+  public updateRealProgress(_modelKey: string, percentage: number, loaded: string, total: string, remaining: string, rate?: number): void {
+    // Find the most recent loading message for this model
+    const loadingMessages = Array.from(document.querySelectorAll('[id^="loading-"]')).reverse();
+    const loadingMessage = loadingMessages.find(msg => msg.id.includes('loading-')) as HTMLElement;
+    
+    if (!loadingMessage) return;
+    
+    const loadingId = loadingMessage.id;
+    const progressBar = document.getElementById(`progress-bar-${loadingId}`);
+    const progressInfo = document.getElementById(`progress-info-${loadingId}`);
+    const speedInfo = document.getElementById(`speed-info-${loadingId}`);
+    
+    if (progressBar) {
+      progressBar.style.width = `${Math.min(percentage, 100)}%`;
+    }
+    
+    if (progressInfo) {
+      progressInfo.innerHTML = `
+        <span>${loaded}/${total} (${remaining} left)</span>
+        <span>${percentage}%</span>
+      `;
+    }
+    
+    if (speedInfo && rate && rate > 0) {
+      const speedMBps = (rate / (1024 * 1024)).toFixed(1);
+      const remainingBytes = total.includes('MB') ? 
+        parseFloat(remaining.replace(' MB', '')) * 1024 * 1024 : 
+        parseFloat(remaining.replace(' KB', '')) * 1024;
+      const eta = Math.round(remainingBytes / rate);
+      speedInfo.textContent = `📊 ${speedMBps} MB/s • ETA: ${eta}s`;
+    } else if (speedInfo) {
+      speedInfo.textContent = 'Downloading model files...';
+    }
   }
 
   private showTypingIndicator(): void {

@@ -8,7 +8,7 @@ import { setupCanvas, scaleCanvasToWindow } from "./modules/canvas";
 import { getCurrentRoom, initializeRoomSystem } from "./modules/roomManager";
 import { initializeBossInteraction, checkBossProximity } from "./modules/bossInteraction";
 import { ConversationSystem } from "./modules/conversation";
-import { initializeAI, answerQuestion, getFallbackResponse, isAIReady, getCurrentModelInfo, switchModel, getCurrentModelKey } from "./modules/aiProcessor";
+import { answerQuestion, getFallbackResponse, isAIReady, switchModel, getCurrentModelKey, setProgressUpdateCallback, startBackgroundLoading, setBackgroundProgressCallback } from "./modules/aiProcessor";
 
 // --- Setup canvas ---
 const dummyMap = Array(MAP_HEIGHT_TILES)
@@ -77,6 +77,22 @@ conversationSystem.setModelSwitchCallback(async (modelName: string): Promise<boo
   } catch (error) {
     console.error(`💥 Error switching to ${modelName} model:`, error);
     return false;
+  }
+});
+
+// Setup real-time progress callback for download progress
+setProgressUpdateCallback((modelKey: string, percentage: number, loaded: string, total: string, remaining: string, rate?: number) => {
+  conversationSystem.updateRealProgress(modelKey, percentage, loaded, total, remaining, rate);
+});
+
+// Setup background loading progress callback
+setBackgroundProgressCallback((modelKey: string, status: string, progress?: number) => {
+  console.log(`🔄 Background loading ${modelKey}: ${status} ${progress ? `(${progress}MB)` : ''}`);
+  
+  // You could add a subtle UI indicator here in the future
+  // For now, just log the background progress
+  if (status === 'completed') {
+    console.log(`⚡ ${modelKey} model ready for instant switching!`);
   }
 });
 
@@ -749,17 +765,11 @@ loadAssets(() => {
   setupInputListeners();
   setupTouchControls();
 
-  console.log("Initializing AI system (this may take a moment)...");
-  initializeAI().then((success) => {
-    if (success) {
-      console.log("AI system ready!");
-      const modelInfo = getCurrentModelInfo();
-      console.log(`🤖 Active Model: ${modelInfo.name}`);
-      console.log("💬 Players can choose between AI models in the conversation interface!");
-    } else {
-      console.log("AI system failed to initialize, using fallback responses");
-    }
-  });
+  console.log("🚀 Starting background AI model preloading...");
+  console.log("🎮 Game will start immediately while models load in background!");
+  
+  // Start background loading - this happens in parallel with game play
+  startBackgroundLoading();
 
   console.log("Starting game...");
   startGame();

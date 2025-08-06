@@ -1,8 +1,4 @@
-// modules/aiProcessor.ts - AI processing with Transformers.js integration
-
-// Dynamic import from CDN to avoid bundling issues
-// import { pipeline } from "@xenova/transformers";
-let pipeline: any;
+// modules/aiProcessor.ts - AI processing with Transformers.js v3 CDN integration
 
 interface CVContext {
   personalInfo: string;
@@ -18,28 +14,51 @@ let isModelLoaded = false;
 let currentModelName = "";
 let currentModelType = "";
 
+// CDN-based transformers.js loading
+let transformersModule: any = null;
+
+// Progress tracking callback for UI updates
+let progressUpdateCallback:
+  | ((
+      modelKey: string,
+      percentage: number,
+      loaded: string,
+      total: string,
+      remaining: string,
+      rate?: number
+    ) => void)
+  | null = null;
+
+// Background preloading system
+let preloadedModels: { [key: string]: any } = {};
+let backgroundLoadingStatus: { [key: string]: 'pending' | 'loading' | 'completed' | 'error' } = {
+  distilbert: 'pending',
+  qwen: 'pending'
+};
+let backgroundProgressCallback: ((modelKey: string, status: string, progress?: number) => void) | null = null;
+
 // Available AI models - both Q&A and chat models
 const AI_MODELS: { [key: string]: any } = {
   distilbert: {
-    name: 'Xenova/distilbert-base-cased-distilled-squad',
-    description: 'DistilBERT model optimized for question-answering',
-    size: '~65MB',
-    type: 'qa'
+    name: "Xenova/distilbert-base-cased-distilled-squad",
+    description: "DistilBERT model optimized for question-answering",
+    size: "~65MB",
+    type: "qa",
   },
   qwen: {
-    name: 'Xenova/Qwen1.5-0.5B-Chat',
-    description: 'Qwen 1.5 0.5B Chat - Small conversational language model',
-    size: '~500MB',
-    type: 'chat'
-  }
+    name: "onnx-community/Qwen2.5-0.5B-Instruct",
+    description: "Qwen 2.5 0.5B Instruct - Small conversational language model",
+    size: "~500MB",
+    type: "chat",
+  },
 };
 
-// Configuration - temporarily using fallback only due to ONNX issues
+// Configuration - using @huggingface/transformers v3 with CDN
 const MODEL_CONFIG = {
-  preferredModel: 'qwen', // Change to 'distilbert' if you prefer the Q&A model
-  fallbackModels: ['distilbert'],
+  preferredModel: "distilbert", // Start with smaller model for testing
+  fallbackModels: ["distilbert"],
   enableModelFallback: true,
-  useOnlyFallback: true // Temporary flag to test without AI loading
+  useOnlyFallback: false, // Try to load real AI models
 };
 
 // CV context data extracted from the portfolio game content
@@ -127,75 +146,214 @@ const cvContext: CVContext = {
   `,
 };
 
+// Background loading function that stores models instead of overwriting aiPipeline
+async function loadModelInBackground(modelKey: string): Promise<boolean> {
+  const model = AI_MODELS[modelKey];
+  if (!model || !transformersModule) {
+    console.error(`❌ Model key invalid or transformers not loaded: ${modelKey}`);
+    backgroundLoadingStatus[modelKey] = 'error';
+    return false;
+  }
+
+  try {
+    console.log(`🔄 Background loading ${modelKey} model: ${model.name}`);
+    backgroundLoadingStatus[modelKey] = 'loading';
+    
+    if (backgroundProgressCallback) {
+      backgroundProgressCallback(modelKey, 'loading', 0);
+    }
+
+    // Choose pipeline type based on model type
+    const pipelineType = model.type === "chat" ? "text-generation" : "question-answering";
+
+    // Configure options for background loading (simplified progress tracking)
+    const pipelineOptions: any = {
+      device: "webgpu",
+      progress_callback: (progress: any) => {
+        if (progress.status === "downloading") {
+          // Since content-length isn't available, we'll use a chunk-based progress estimate
+          const chunkProgress = Math.min(progress.loaded ? Math.floor(progress.loaded / (1024 * 1024)) : 0, 90);
+          console.log(`📥 Background downloading ${modelKey}: ~${chunkProgress}MB loaded...`);
+          
+          if (backgroundProgressCallback) {
+            backgroundProgressCallback(modelKey, 'downloading', chunkProgress);
+          }
+        } else if (progress.status === "loading") {
+          console.log(`🧠 Loading ${modelKey} model into memory...`);
+          if (backgroundProgressCallback) {
+            backgroundProgressCallback(modelKey, 'finalizing', 95);
+          }
+        }
+      },
+    };
+
+    // Configure dtype for different models
+    if (modelKey === "qwen") {
+      pipelineOptions.dtype = "q4";
+    } else {
+      pipelineOptions.dtype = "q4";
+    }
+
+    // Load the model and store it
+    const pipeline = await transformersModule.pipeline(pipelineType, model.name, pipelineOptions);
+    
+    // Store the preloaded model
+    preloadedModels[modelKey] = {
+      pipeline,
+      modelInfo: model,
+      loadTime: Date.now()
+    };
+
+    backgroundLoadingStatus[modelKey] = 'completed';
+    console.log(`✅ Background loading of ${modelKey} completed!`);
+    
+    if (backgroundProgressCallback) {
+      backgroundProgressCallback(modelKey, 'completed', 100);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`❌ Failed to background load ${modelKey} model:`, error);
+    backgroundLoadingStatus[modelKey] = 'error';
+    if (backgroundProgressCallback) {
+      backgroundProgressCallback(modelKey, 'error', 0);
+    }
+    return false;
+  }
+}
+
 async function loadModel(modelKey: string): Promise<boolean> {
   const model = AI_MODELS[modelKey];
-  if (!model) {
-    console.error(`❌ Unknown model key: ${modelKey}`);
+  if (!model || !transformersModule) {
+    console.error(
+      `❌ Model key invalid or transformers not loaded: ${modelKey}`
+    );
     return false;
   }
 
   try {
     console.log(`🤖 Loading ${modelKey} model: ${model.name}`);
     console.log(`📦 Model info: ${model.description} (${model.size})`);
-    
+
     // Choose pipeline type based on model type
-    const pipelineType = model.type === 'chat' ? 'text-generation' : 'question-answering';
-    
-    // For Qwen model, add model_kwargs to fix the incorrect filename bug in @xenova/transformers@2.17.2
+    const pipelineType =
+      model.type === "chat" ? "text-generation" : "question-answering";
+
+    // Configure options based on model type and available files
     const pipelineOptions: any = {
+      device: "webgpu", // Try WebGPU first, will fallback to CPU automatically
       progress_callback: (progress: any) => {
         if (progress.status === "downloading") {
+          const percentage = Math.round(progress.progress || 0);
+          const loaded = progress.loaded || 0;
+          const total = progress.total || 0;
+          const remaining = total - loaded;
+
+          // Calculate download speed if available
+          let speedInfo = "";
+          if (progress.rate && progress.rate > 0) {
+            const speedMBps = (progress.rate / (1024 * 1024)).toFixed(1);
+            const remainingSeconds =
+              remaining > 0 ? Math.round(remaining / progress.rate) : 0;
+            speedInfo = ` | ${speedMBps} MB/s | ${remainingSeconds}s remaining`;
+          }
+
+          // Format bytes
+          const formatBytes = (bytes: number) => {
+            if (bytes === 0) return "0 B";
+            const k = 1024;
+            const sizes = ["B", "KB", "MB", "GB"];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return (
+              parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i]
+            );
+          };
+
+          const loadedStr = formatBytes(loaded);
+          const totalStr = formatBytes(total);
+          const remainingStr = formatBytes(remaining);
+
           console.log(
-            `📥 Downloading ${modelKey} model: ${Math.round(progress.progress || 0)}%`
+            `📥 Downloading ${modelKey} model: ${percentage}% (${loadedStr}/${totalStr}, ${remainingStr} left)${speedInfo}`
           );
+
+          // Update progress bar in conversation UI if available
+          if (progressUpdateCallback) {
+            progressUpdateCallback(
+              modelKey,
+              percentage,
+              loadedStr,
+              totalStr,
+              remainingStr,
+              progress.rate
+            );
+          }
+        } else if (progress.status === "loading") {
+          console.log(`🧠 Loading ${modelKey} model into memory...`);
         }
       },
     };
 
-    // Add model_kwargs for Qwen to fix the 404 error with decoder_model_merged_quantized.onnx
-    if (model.type === 'chat' && modelKey === 'qwen') {
-      pipelineOptions.model_kwargs = {
-        main: {
-          // Fix for @xenova/transformers@2.17.2 bug: point to the correct ONNX file
-          decoder_model_with_past: 'onnx/decoder_with_past_model_quantized.onnx',
-        }
-      };
-      console.log("🔧 Using model_kwargs fix for Qwen model file loading");
+    // Configure dtype for different models
+    if (modelKey === "qwen") {
+      pipelineOptions.dtype = "q4"; // Use 4-bit quantization for good balance of quality and speed
+    } else {
+      // For other models like DistilBERT, use standard dtype
+      pipelineOptions.dtype = "q4";
     }
-    
-    aiPipeline = await pipeline(pipelineType, model.name, pipelineOptions);
+
+    // Load the model using CDN-based transformers
+    aiPipeline = await transformersModule.pipeline(
+      pipelineType,
+      model.name,
+      pipelineOptions
+    );
 
     // Test the model based on its type
     console.log(`🧪 Testing ${modelKey} model...`);
     let testResult;
-    
-    if (model.type === 'chat') {
+
+    if (model.type === "chat") {
       // Test chat model with a simple generation using proper format
       let testPrompt;
       try {
         // Try to use chat template
         const testMessages = [
-          { role: 'system', content: 'You are a helpful assistant.' },
-          { role: 'user', content: 'What is your name?' }
+          { role: "system", content: "You are a helpful assistant." },
+          { role: "user", content: "What is your name?" },
         ];
         testPrompt = aiPipeline.tokenizer.apply_chat_template(testMessages, {
           tokenize: false,
           add_generation_prompt: true,
         });
       } catch (error) {
-        // Fallback to simple prompt
-        testPrompt = "System: You are a helpful assistant.\nUser: What is your name?\nAssistant:";
+        // Use model-specific fallback format
+        if (modelKey === "qwen") {
+          testPrompt = `<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What is your name?<|im_end|>
+<|im_start|>assistant
+`;
+        } else {
+          testPrompt =
+            "System: You are a helpful assistant.\nUser: What is your name?\nAssistant:";
+        }
       }
-      
-      testResult = await aiPipeline(testPrompt, { 
-        max_new_tokens: 20, 
+
+      testResult = await aiPipeline(testPrompt, {
+        max_new_tokens: 20,
         do_sample: false,
-        return_full_text: false
+        return_full_text: false,
       });
       console.log(`🔍 ${modelKey} chat test result:`, testResult);
-      
+
       // Check if we got a reasonable response
-      if (!testResult || !testResult[0]?.generated_text || testResult[0].generated_text.length < 3) {
+      if (
+        !testResult ||
+        !testResult[0]?.generated_text ||
+        testResult[0].generated_text.length < 3
+      ) {
         console.warn(`⚠️ ${modelKey} model test failed`);
         return false;
       }
@@ -206,16 +364,18 @@ async function loadModel(modelKey: string): Promise<boolean> {
         "The name is Nicolo Pedrani. He is a professional."
       );
       console.log(`🔍 ${modelKey} Q&A test result:`, testResult);
-      
+
       if (!testResult.answer || testResult.score < 0.01) {
         console.warn(`⚠️ ${modelKey} model test failed`);
         return false;
       }
     }
-    
+
     console.log(`✅ ${modelKey} model test successful!`);
     currentModelName = `${modelKey} (${model.name})`;
     currentModelType = model.type;
+    console.log(`🔄 Model switched to: ${currentModelName}`);
+    console.log(`📝 Model type: ${currentModelType}`);
     return true;
   } catch (error) {
     console.error(`❌ Failed to load ${modelKey} model:`, error);
@@ -225,62 +385,48 @@ async function loadModel(modelKey: string): Promise<boolean> {
 
 export async function initializeAI(): Promise<boolean> {
   try {
-    console.log("🔧 Initializing AI pipeline...");
-    
-    // Temporary: Skip AI loading due to ONNX issues, use fallback only
+    console.log("🔧 Checking AI system initialization...");
+
+    // Skip AI loading if configured for fallback only
     if (MODEL_CONFIG.useOnlyFallback) {
-      console.log("🔄 Using fallback responses only (AI models disabled temporarily)");
+      console.log("🔄 Using fallback responses only (AI models disabled)");
       isModelLoaded = false;
       currentModelName = "Fallback System";
       currentModelType = "fallback";
       console.log("✅ Fallback system initialized successfully!");
       return true;
     }
-    
-    // Load transformers.js from CDN with environment configuration
-    if (!pipeline) {
-      console.log("📥 Loading transformers.js from CDN...");
-      
-      // Set environment to web before loading
-      globalThis.env = globalThis.env || {};
-      globalThis.env.backends = {
-        onnx: {
-          wasm: {
-            numThreads: 1,
-            wasmPaths: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/'
-          }
-        }
-      };
-      
-      const transformers = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/+esm');
-      pipeline = transformers.pipeline;
-      
-      // Set environment to use CPU only
-      transformers.env.backends.onnx.wasm.numThreads = 1;
-      transformers.env.allowLocalModels = false;
-      
-      console.log("✅ Transformers.js loaded successfully");
-    }
-    
-    const preferredModel = AI_MODELS[MODEL_CONFIG.preferredModel];
-    console.log(`🎯 Loading ${preferredModel.description}...`);
 
-    const success = await loadModel(MODEL_CONFIG.preferredModel);
+    // Check if we have preloaded models available
+    const defaultModel = MODEL_CONFIG.preferredModel;
     
-    if (success) {
+    if (preloadedModels[defaultModel] && backgroundLoadingStatus[defaultModel] === 'completed') {
+      console.log(`⚡ Using preloaded ${defaultModel} model for initialization!`);
+      
+      // Use the preloaded model
+      aiPipeline = preloadedModels[defaultModel].pipeline;
+      currentModelName = `${defaultModel} (${preloadedModels[defaultModel].modelInfo.name})`;
+      currentModelType = preloadedModels[defaultModel].modelInfo.type;
       isModelLoaded = true;
-      console.log(`🎉 AI pipeline initialized successfully!`);
+      
+      console.log(`✅ AI system ready with preloaded ${defaultModel}!`);
       console.log(`📋 Active model: ${currentModelName}`);
       return true;
     } else {
-      console.warn("⚠️ AI model failed to load, will rely on fallback responses");
+      // Fallback to traditional loading if no preloaded model is available
+      console.log(`🔄 No preloaded models available, using fallback responses for now`);
       isModelLoaded = false;
-      return false;
+      currentModelName = "Loading in background...";
+      currentModelType = "fallback";
+      return true; // Return true so conversation system still works
     }
   } catch (error) {
-    console.error("💥 Critical error during AI initialization:", error);
+    console.error("💥 AI initialization error:", error);
+    console.log("🔄 Falling back to scripted responses");
     isModelLoaded = false;
-    return false;
+    currentModelName = "Fallback System";
+    currentModelType = "fallback";
+    return true; // Return true so conversation system still works
   }
 }
 
@@ -288,11 +434,15 @@ export function isAIReady(): boolean {
   return isModelLoaded && aiPipeline !== null;
 }
 
-export function getCurrentModelInfo(): { name: string; isReady: boolean; availableModels: typeof AI_MODELS } {
+export function getCurrentModelInfo(): {
+  name: string;
+  isReady: boolean;
+  availableModels: typeof AI_MODELS;
+} {
   return {
     name: currentModelName || "No model loaded",
     isReady: isAIReady(),
-    availableModels: AI_MODELS
+    availableModels: AI_MODELS,
   };
 }
 
@@ -302,23 +452,60 @@ export function getCurrentModelKey(): string {
   return match ? match[1] : MODEL_CONFIG.preferredModel;
 }
 
+export function setProgressUpdateCallback(
+  callback: (
+    modelKey: string,
+    percentage: number,
+    loaded: string,
+    total: string,
+    remaining: string,
+    rate?: number
+  ) => void
+): void {
+  progressUpdateCallback = callback;
+}
+
 export async function switchModel(modelKey: string): Promise<boolean> {
   if (!AI_MODELS[modelKey]) {
-    console.error(`❌ Invalid model key: ${modelKey}. Available: ${Object.keys(AI_MODELS).join(', ')}`);
+    console.error(
+      `❌ Invalid model key: ${modelKey}. Available: ${Object.keys(
+        AI_MODELS
+      ).join(", ")}`
+    );
     return false;
   }
 
   console.log(`🔄 Switching to ${modelKey} model...`);
-  const success = await loadModel(modelKey);
-  
-  if (success) {
+
+  // Check if model is already preloaded
+  if (preloadedModels[modelKey] && backgroundLoadingStatus[modelKey] === 'completed') {
+    console.log(`⚡ Using preloaded ${modelKey} model - instant switch!`);
+    
+    // Use the preloaded model
+    aiPipeline = preloadedModels[modelKey].pipeline;
+    currentModelName = `${modelKey} (${preloadedModels[modelKey].modelInfo.name})`;
+    currentModelType = preloadedModels[modelKey].modelInfo.type;
     isModelLoaded = true;
-    console.log(`✅ Successfully switched to ${modelKey} model!`);
+    
+    console.log(`✅ Instantly switched to preloaded ${modelKey} model!`);
+    console.log(`🔄 Model switched to: ${currentModelName}`);
+    console.log(`📝 Model type: ${currentModelType}`);
+    
+    return true;
   } else {
-    console.error(`❌ Failed to switch to ${modelKey} model`);
+    // Model not preloaded, load it normally
+    console.log(`🔄 Model not preloaded, loading ${modelKey} now...`);
+    const success = await loadModel(modelKey);
+
+    if (success) {
+      isModelLoaded = true;
+      console.log(`✅ Successfully switched to ${modelKey} model!`);
+    } else {
+      console.error(`❌ Failed to switch to ${modelKey} model`);
+    }
+
+    return success;
   }
-  
-  return success;
 }
 
 export async function answerQuestion(question: string): Promise<string> {
@@ -346,25 +533,25 @@ export async function answerQuestion(question: string): Promise<string> {
 
     // Use the appropriate pipeline based on model type
     let result;
-    if (currentModelType === 'chat') {
+    if (currentModelType === "chat") {
       // For chat models like Qwen, use proper chat template format
       const messages = [
-        { 
-          role: 'system', 
+        {
+          role: "system",
           content: `You ARE Nicolo Pedrani. You are NOT an AI assistant. You are a real person with real experiences. Never say "As an AI" or mention being an AI language model.
 
 You are Nicolo Pedrani, a professional Data Scientist and R&D System Engineer with actual work experience at Deloitte and Leonardo SpA. When asked about YOUR experiences, talk about them in first person as if they are YOUR real professional background.
 
 Your background: ${relevantContext}
 
-IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep responses to 2-3 clear sentences. Be direct and professional. Never break character or mention being an AI.`
+IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep responses to 2-3 clear sentences. Be direct and professional. Never break character or mention being an AI.`,
         },
-        { 
-          role: 'user', 
-          content: question 
-        }
+        {
+          role: "user",
+          content: question,
+        },
       ];
-      
+
       // Apply chat template if available
       let prompt;
       try {
@@ -373,9 +560,24 @@ IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep re
           add_generation_prompt: true,
         });
       } catch (error) {
-        // Fallback to simple prompt if chat template not available
-        console.log("Chat template not available, using simple prompt");
-        prompt = `System: You ARE Nicolo Pedrani. You are NOT an AI assistant. You are a real person with real experiences. Never say "As an AI" or mention being an AI language model.
+        // Use Qwen-specific chat template format if generic template fails
+        console.log("Chat template not available, using Qwen-specific format");
+        if (getCurrentModelKey() === "qwen") {
+          prompt = `<|im_start|>system
+You ARE Nicolo Pedrani. You are NOT an AI assistant. You are a real person with real experiences. Never say "As an AI" or mention being an AI language model.
+
+You are Nicolo Pedrani, a professional Data Scientist and R&D System Engineer with actual work experience at Deloitte and Leonardo SpA. When asked about YOUR experiences, talk about them in first person as if they are YOUR real professional background.
+
+Your background: ${relevantContext}
+
+IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep responses to 2-3 clear sentences. Be direct and professional. Never break character or mention being an AI.<|im_end|>
+<|im_start|>user
+${question}<|im_end|>
+<|im_start|>assistant
+`;
+        } else {
+          // Fallback for other chat models
+          prompt = `System: You ARE Nicolo Pedrani. You are NOT an AI assistant. You are a real person with real experiences. Never say "As an AI" or mention being an AI language model.
 
 You are Nicolo Pedrani, a professional Data Scientist and R&D System Engineer with actual work experience at Deloitte and Leonardo SpA. When asked about YOUR experiences, talk about them in first person as if they are YOUR real professional background.
 
@@ -383,9 +585,11 @@ Your background: ${relevantContext}
 
 IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep responses to 2-3 clear sentences. Be direct and professional. Never break character or mention being an AI.
 
-User: ${question}`;
+User: ${question}
+Assistant: `;
+        }
       }
-      
+
       // Generate response using the prompt with parameters optimized for concise responses
       const output = await aiPipeline(prompt, {
         max_new_tokens: 80, // Reduced from 128 to encourage shorter responses
@@ -393,11 +597,11 @@ User: ${question}`;
         return_full_text: false,
         temperature: 0.1, // Lower temperature for more focused responses
       });
-      
+
       // Extract the generated text
-      result = { 
+      result = {
         answer: output[0]?.generated_text?.trim() || "",
-        score: 1.0 // Chat models don't provide confidence scores
+        score: 1.0, // Chat models don't provide confidence scores
       };
     } else {
       // Use Q&A pipeline for DistilBERT
@@ -803,4 +1007,56 @@ export function getFallbackResponse(question: string): string {
   } else {
     return "I'm a professional with diverse experience in data science consulting and R&D engineering. Feel free to ask about my work at Deloitte, Leonardo SpA, my technical skills, my hobbies, or my travel experiences!";
   }
+}
+
+// === Background Loading Functions ===
+
+export function setBackgroundProgressCallback(callback: (modelKey: string, status: string, progress?: number) => void): void {
+  backgroundProgressCallback = callback;
+}
+
+export function getModelLoadingStatus(): { [key: string]: string } {
+  return { ...backgroundLoadingStatus };
+}
+
+export async function startBackgroundLoading(): Promise<void> {
+  if (!transformersModule) {
+    console.log("🔧 Loading Transformers.js before starting background loading...");
+    try {
+      transformersModule = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1");
+      console.log("✅ Transformers.js loaded for background loading");
+      
+      // Configure environment
+      if (transformersModule.env) {
+        transformersModule.env.allowRemoteModels = true;
+        transformersModule.env.allowLocalModels = false;
+        transformersModule.env.useBrowserCache = true;
+      }
+    } catch (error) {
+      console.error("❌ Failed to load transformers for background loading:", error);
+      return;
+    }
+  }
+
+  console.log("🚀 Starting background model preloading...");
+  
+  // Start loading DistilBERT first (smaller, faster to load)
+  loadModelInBackground('distilbert')
+    .then((success) => {
+      if (success) {
+        console.log("🎯 DistilBERT preloaded successfully! Starting Qwen preloading...");
+        
+        // Start loading Qwen after DistilBERT finishes
+        loadModelInBackground('qwen')
+          .then((qwenSuccess) => {
+            if (qwenSuccess) {
+              console.log("🎉 All models preloaded successfully!");
+            } else {
+              console.log("⚠️ Qwen preloading failed, but DistilBERT is ready");
+            }
+          });
+      } else {
+        console.log("⚠️ DistilBERT preloading failed, skipping Qwen");
+      }
+    });
 }

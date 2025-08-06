@@ -1,23 +1,19 @@
 {
-  "name": "gamedev-js",
+  "name": "myimmersiveexperience",
   "version": "1.0.0",
-  "description": "GameDev-JS/ ├── index.html <-- La tua pagina HTML ├── style.css <-- Stile del gioco ├── main.js <-- Entry point JS (modulare) ├── modules/ <-- Tutti i tuoi moduli JavaScript │ ├── assets.js │ ├── canvas.js │ ├── input.js │ ├── map.js │ ├── player.js │ └── sprites.js ├── assets/ <-- Tutti gli asset di gioco (immagini) │ ├── Grass_Middle.png │ ├── Path_Middle.png │ ├── Oak_Tree.png │ └── Player.png └── README.md <-- (opzionale) per spiegare la struttura e l’uso del progetto",
-  "main": "main.js",
+  "description": "Interactive Portfolio Game with AI-powered conversations",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "./deploy.sh"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["portfolio", "game", "ai", "typescript"],
+  "author": "Nicolo Pedrani",
+  "license": "MIT",
   "devDependencies": {
     "@types/node": "^24.1.0",
     "vite": "^7.0.6"
-  },
-  "dependencies": {
-    "@xenova/transformers": "^2.17.2"
   }
 }
