@@ -11,35 +11,32 @@ interface CVContext {
   achievements: string;
 }
 
-let questionAnsweringPipeline: any = null;
+let aiPipeline: any = null;
 let isModelLoaded = false;
 let currentModelName = "";
+let currentModelType = "";
 
-// Available AI models - using proven working model
-const AI_MODELS = {
+// Available AI models - both Q&A and chat models
+const AI_MODELS: { [key: string]: any } = {
   distilbert: {
     name: 'Xenova/distilbert-base-cased-distilled-squad',
     description: 'DistilBERT model optimized for question-answering',
-    size: '~65MB'
+    size: '~65MB',
+    type: 'qa'
+  },
+  qwen: {
+    name: 'Xenova/Qwen1.5-0.5B-Chat',
+    description: 'Qwen 1.5 0.5B Chat - Small conversational language model',
+    size: '~500MB',
+    type: 'chat'
   }
-  // Other models kept for reference (may require authentication):
-  // balanced: {
-  //   name: 'Xenova/bert-base-multilingual-uncased-squad', 
-  //   description: 'Multilingual BERT model - better understanding',
-  //   size: '~170MB'
-  // },
-  // quality: {
-  //   name: 'Xenova/bert-base-uncased-squad',
-  //   description: 'BERT base model - high quality responses',
-  //   size: '~110MB'
-  // }
 };
 
-// Configuration - using only the working model
+// Configuration - you can change preferredModel to 'qwen' to use Qwen1.5-0.5B-Chat by default
 const MODEL_CONFIG = {
-  preferredModel: 'distilbert',
-  fallbackModels: [], // No fallbacks needed
-  enableModelFallback: false
+  preferredModel: 'qwen', // Change to 'distilbert' if you prefer the Q&A model
+  fallbackModels: ['distilbert'],
+  enableModelFallback: true
 };
 
 // CV context data extracted from the portfolio game content
@@ -138,37 +135,85 @@ async function loadModel(modelKey: string): Promise<boolean> {
     console.log(`🤖 Loading ${modelKey} model: ${model.name}`);
     console.log(`📦 Model info: ${model.description} (${model.size})`);
     
-    questionAnsweringPipeline = await pipeline(
-      "question-answering",
-      model.name,
-      {
-        progress_callback: (progress: any) => {
-          if (progress.status === "downloading") {
-            console.log(
-              `📥 Downloading ${modelKey} model: ${Math.round(progress.progress || 0)}%`
-            );
-          }
-        },
-      }
-    );
+    // Choose pipeline type based on model type
+    const pipelineType = model.type === 'chat' ? 'text-generation' : 'question-answering';
+    
+    // For Qwen model, add model_kwargs to fix the incorrect filename bug in @xenova/transformers@2.17.2
+    const pipelineOptions: any = {
+      progress_callback: (progress: any) => {
+        if (progress.status === "downloading") {
+          console.log(
+            `📥 Downloading ${modelKey} model: ${Math.round(progress.progress || 0)}%`
+          );
+        }
+      },
+    };
 
-    // Test the model
-    console.log(`🧪 Testing ${modelKey} model...`);
-    const testResult = await questionAnsweringPipeline(
-      "What is the name?",
-      "The name is Nicolo Pedrani. He is a professional."
-    );
-
-    console.log(`🔍 ${modelKey} model test result:`, testResult);
-
-    if (!testResult.answer || testResult.score < 0.01) {
-      console.warn(`⚠️ ${modelKey} model test failed`);
-      return false;
-    } else {
-      console.log(`✅ ${modelKey} model test successful!`);
-      currentModelName = `${modelKey} (${model.name})`;
-      return true;
+    // Add model_kwargs for Qwen to fix the 404 error with decoder_model_merged_quantized.onnx
+    if (model.type === 'chat' && modelKey === 'qwen') {
+      pipelineOptions.model_kwargs = {
+        main: {
+          // Fix for @xenova/transformers@2.17.2 bug: point to the correct ONNX file
+          decoder_model_with_past: 'onnx/decoder_with_past_model_quantized.onnx',
+        }
+      };
+      console.log("🔧 Using model_kwargs fix for Qwen model file loading");
     }
+    
+    aiPipeline = await pipeline(pipelineType, model.name, pipelineOptions);
+
+    // Test the model based on its type
+    console.log(`🧪 Testing ${modelKey} model...`);
+    let testResult;
+    
+    if (model.type === 'chat') {
+      // Test chat model with a simple generation using proper format
+      let testPrompt;
+      try {
+        // Try to use chat template
+        const testMessages = [
+          { role: 'system', content: 'You are a helpful assistant.' },
+          { role: 'user', content: 'What is your name?' }
+        ];
+        testPrompt = aiPipeline.tokenizer.apply_chat_template(testMessages, {
+          tokenize: false,
+          add_generation_prompt: true,
+        });
+      } catch (error) {
+        // Fallback to simple prompt
+        testPrompt = "System: You are a helpful assistant.\nUser: What is your name?\nAssistant:";
+      }
+      
+      testResult = await aiPipeline(testPrompt, { 
+        max_new_tokens: 20, 
+        do_sample: false,
+        return_full_text: false
+      });
+      console.log(`🔍 ${modelKey} chat test result:`, testResult);
+      
+      // Check if we got a reasonable response
+      if (!testResult || !testResult[0]?.generated_text || testResult[0].generated_text.length < 3) {
+        console.warn(`⚠️ ${modelKey} model test failed`);
+        return false;
+      }
+    } else {
+      // Test Q&A model
+      testResult = await aiPipeline(
+        "What is the name?",
+        "The name is Nicolo Pedrani. He is a professional."
+      );
+      console.log(`🔍 ${modelKey} Q&A test result:`, testResult);
+      
+      if (!testResult.answer || testResult.score < 0.01) {
+        console.warn(`⚠️ ${modelKey} model test failed`);
+        return false;
+      }
+    }
+    
+    console.log(`✅ ${modelKey} model test successful!`);
+    currentModelName = `${modelKey} (${model.name})`;
+    currentModelType = model.type;
+    return true;
   } catch (error) {
     console.error(`❌ Failed to load ${modelKey} model:`, error);
     return false;
@@ -178,9 +223,10 @@ async function loadModel(modelKey: string): Promise<boolean> {
 export async function initializeAI(): Promise<boolean> {
   try {
     console.log("🔧 Initializing AI pipeline...");
-    console.log(`🎯 Loading DistilBERT model for question-answering...`);
+    const preferredModel = AI_MODELS[MODEL_CONFIG.preferredModel];
+    console.log(`🎯 Loading ${preferredModel.description}...`);
 
-    const success = await loadModel('distilbert');
+    const success = await loadModel(MODEL_CONFIG.preferredModel);
     
     if (success) {
       isModelLoaded = true;
@@ -200,7 +246,7 @@ export async function initializeAI(): Promise<boolean> {
 }
 
 export function isAIReady(): boolean {
-  return isModelLoaded && questionAnsweringPipeline !== null;
+  return isModelLoaded && aiPipeline !== null;
 }
 
 export function getCurrentModelInfo(): { name: string; isReady: boolean; availableModels: typeof AI_MODELS } {
@@ -209,6 +255,12 @@ export function getCurrentModelInfo(): { name: string; isReady: boolean; availab
     isReady: isAIReady(),
     availableModels: AI_MODELS
   };
+}
+
+export function getCurrentModelKey(): string {
+  // Extract model key from currentModelName (e.g., "qwen (Xenova/Qwen1.5-0.5B-Chat)" -> "qwen")
+  const match = currentModelName.match(/^(\w+)\s*\(/);
+  return match ? match[1] : MODEL_CONFIG.preferredModel;
 }
 
 export async function switchModel(modelKey: string): Promise<boolean> {
@@ -253,8 +305,65 @@ export async function answerQuestion(question: string): Promise<string> {
       return "I'd be happy to answer questions about my professional experience, skills, projects, or background. Could you please ask something more specific about my CV or career?";
     }
 
-    // Use the Q&A pipeline with correct parameter structure
-    const result = await questionAnsweringPipeline(question, relevantContext);
+    // Use the appropriate pipeline based on model type
+    let result;
+    if (currentModelType === 'chat') {
+      // For chat models like Qwen, use proper chat template format
+      const messages = [
+        { 
+          role: 'system', 
+          content: `You ARE Nicolo Pedrani. You are NOT an AI assistant. You are a real person with real experiences. Never say "As an AI" or mention being an AI language model.
+
+You are Nicolo Pedrani, a professional Data Scientist and R&D System Engineer with actual work experience at Deloitte and Leonardo SpA. When asked about YOUR experiences, talk about them in first person as if they are YOUR real professional background.
+
+Your background: ${relevantContext}
+
+IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep responses to 2-3 clear sentences. Be direct and professional. Never break character or mention being an AI.`
+        },
+        { 
+          role: 'user', 
+          content: question 
+        }
+      ];
+      
+      // Apply chat template if available
+      let prompt;
+      try {
+        prompt = aiPipeline.tokenizer.apply_chat_template(messages, {
+          tokenize: false,
+          add_generation_prompt: true,
+        });
+      } catch (error) {
+        // Fallback to simple prompt if chat template not available
+        console.log("Chat template not available, using simple prompt");
+        prompt = `System: You ARE Nicolo Pedrani. You are NOT an AI assistant. You are a real person with real experiences. Never say "As an AI" or mention being an AI language model.
+
+You are Nicolo Pedrani, a professional Data Scientist and R&D System Engineer with actual work experience at Deloitte and Leonardo SpA. When asked about YOUR experiences, talk about them in first person as if they are YOUR real professional background.
+
+Your background: ${relevantContext}
+
+IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep responses to 2-3 clear sentences. Be direct and professional. Never break character or mention being an AI.
+
+User: ${question}`;
+      }
+      
+      // Generate response using the prompt with parameters optimized for concise responses
+      const output = await aiPipeline(prompt, {
+        max_new_tokens: 80, // Reduced from 128 to encourage shorter responses
+        do_sample: false,
+        return_full_text: false,
+        temperature: 0.1, // Lower temperature for more focused responses
+      });
+      
+      // Extract the generated text
+      result = { 
+        answer: output[0]?.generated_text?.trim() || "",
+        score: 1.0 // Chat models don't provide confidence scores
+      };
+    } else {
+      // Use Q&A pipeline for DistilBERT
+      result = await aiPipeline(question, relevantContext);
+    }
 
     console.log("🤖 AI Model Result:", {
       model: currentModelName,

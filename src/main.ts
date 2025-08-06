@@ -8,7 +8,7 @@ import { setupCanvas, scaleCanvasToWindow } from "./modules/canvas";
 import { getCurrentRoom, initializeRoomSystem } from "./modules/roomManager";
 import { initializeBossInteraction, checkBossProximity } from "./modules/bossInteraction";
 import { ConversationSystem } from "./modules/conversation";
-import { initializeAI, answerQuestion, getFallbackResponse, isAIReady, getCurrentModelInfo, switchModel } from "./modules/aiProcessor";
+import { initializeAI, answerQuestion, getFallbackResponse, isAIReady, getCurrentModelInfo, switchModel, getCurrentModelKey } from "./modules/aiProcessor";
 
 // --- Setup canvas ---
 const dummyMap = Array(MAP_HEIGHT_TILES)
@@ -47,6 +47,10 @@ const conversationSystem = new ConversationSystem();
 // Setup boss conversation event handler
 document.addEventListener('startBossConversation', () => {
   conversationSystem.showConversation();
+  // Update the model selector to show the currently active model
+  setTimeout(() => {
+    conversationSystem.updateModelSelector(getCurrentModelKey());
+  }, 300);
 });
 
 // Setup AI answer callback
@@ -56,6 +60,23 @@ conversationSystem.setAnswerCallback(async (question: string): Promise<string> =
   } else {
     // Use fallback response while AI is loading
     return getFallbackResponse(question);
+  }
+});
+
+// Setup model switching callback for in-game model selection
+conversationSystem.setModelSwitchCallback(async (modelName: string): Promise<boolean> => {
+  console.log(`🔄 Switching to ${modelName} model...`);
+  try {
+    const success = await switchModel(modelName);
+    if (success) {
+      console.log(`✅ Successfully switched to ${modelName} model!`);
+    } else {
+      console.error(`❌ Failed to switch to ${modelName} model`);
+    }
+    return success;
+  } catch (error) {
+    console.error(`💥 Error switching to ${modelName} model:`, error);
+    return false;
   }
 });
 
@@ -734,23 +755,7 @@ loadAssets(() => {
       console.log("AI system ready!");
       const modelInfo = getCurrentModelInfo();
       console.log(`🤖 Active Model: ${modelInfo.name}`);
-      
-      // Add developer console commands
-      (window as any).aiCommands = {
-        getModelInfo: getCurrentModelInfo,
-        switchModel: switchModel,
-        availableModels: () => {
-          const info = getCurrentModelInfo();
-          console.log("Available AI models:");
-          Object.entries(info.availableModels).forEach(([key, model]) => {
-            console.log(`  ${key}: ${model.description} (${model.size})`);
-          });
-          console.log("\nUsage: aiCommands.switchModel('fast') or aiCommands.switchModel('quality')");
-        }
-      };
-      
-      console.log("💡 Developer tip: Use aiCommands.availableModels() to see all models");
-      console.log("💡 Use aiCommands.switchModel('quality') to switch models");
+      console.log("💬 Players can choose between AI models in the conversation interface!");
     } else {
       console.log("AI system failed to initialize, using fallback responses");
     }

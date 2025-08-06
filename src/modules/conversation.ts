@@ -13,6 +13,7 @@ export class ConversationSystem {
   private inputElement: HTMLInputElement | null = null;
   private messagesContainer: HTMLDivElement | null = null;
   private onAnswerCallback?: (question: string) => Promise<string>;
+  private onModelSwitchCallback?: (modelName: string) => Promise<boolean>;
 
   constructor() {
     this.createConversationUI();
@@ -66,6 +67,22 @@ export class ConversationSystem {
     header.innerHTML = `
       <div>💼 Chat with Nicolo Pedrani</div>
       <div style="font-size: 12px; font-weight: normal; margin-top: 3px;">Ask me about my professional experience and skills</div>
+      <div style="font-size: 11px; margin-top: 5px; display: flex; align-items: center; gap: 10px;">
+        <span>🤖 AI Model:</span>
+        <select id="model-selector" style="
+          background: rgba(26,26,46,0.3);
+          color: #1a1a2e;
+          border: 1px solid rgba(26,26,46,0.3);
+          border-radius: 4px;
+          padding: 2px 4px;
+          font-size: 10px;
+          font-weight: bold;
+          cursor: pointer;
+        ">
+          <option value="qwen">💬 Qwen Chat (~500MB)</option>
+          <option value="distilbert">❓ DistilBERT Q&A (~65MB)</option>
+        </select>
+      </div>
       <button id="close-conversation" style="
         position: absolute;
         top: 15px;
@@ -181,6 +198,50 @@ export class ConversationSystem {
       sendButton.style.transform = "scale(1)";
     });
 
+    // Model selector event listener
+    const modelSelector = header.querySelector("#model-selector") as HTMLSelectElement;
+    modelSelector.addEventListener("change", async (e) => {
+      const selectedModel = (e.target as HTMLSelectElement).value;
+      console.log(`🔄 Player selected AI model: ${selectedModel}`);
+      
+      if (this.onModelSwitchCallback) {
+        // Show loading message
+        this.addMessage({
+          type: 'ai',
+          content: `🔄 Switching to ${selectedModel === 'qwen' ? 'Qwen Chat' : 'DistilBERT Q&A'} model, please wait...`,
+          timestamp: new Date()
+        });
+        
+        try {
+          const success = await this.onModelSwitchCallback(selectedModel);
+          if (success) {
+            this.addMessage({
+              type: 'ai',
+              content: `✅ Successfully switched to ${selectedModel === 'qwen' ? 'Qwen Chat model! I can now have more natural conversations with you.' : 'DistilBERT Q&A model! I can now answer your questions more precisely.'}`,
+              timestamp: new Date()
+            });
+          } else {
+            this.addMessage({
+              type: 'ai',
+              content: `❌ Failed to switch to ${selectedModel} model. I'll continue using the current model.`,
+              timestamp: new Date()
+            });
+            // Reset selector to previous model
+            modelSelector.value = selectedModel === 'qwen' ? 'distilbert' : 'qwen';
+          }
+        } catch (error) {
+          console.error("Error switching model:", error);
+          this.addMessage({
+            type: 'ai',
+            content: "❌ Error occurred while switching models. I'll continue using the current model.",
+            timestamp: new Date()
+          });
+          // Reset selector to previous model
+          modelSelector.value = selectedModel === 'qwen' ? 'distilbert' : 'qwen';
+        }
+      }
+    });
+
     // Close on backdrop click
     this.modalElement.addEventListener("click", (e) => {
       if (e.target === this.modalElement) {
@@ -213,7 +274,7 @@ export class ConversationSystem {
       if (this.conversationHistory.length === 0) {
         this.addMessage({
           type: 'ai',
-          content: "Hello! I'm Nicolo Pedrani. Feel free to ask me anything about my professional experience, technical skills, projects, or career background. What would you like to know?",
+          content: "Hello! I'm Nicolo Pedrani. Feel free to ask me anything about my professional experience, technical skills, projects, or career background. You can also choose which AI model to use from the dropdown above! What would you like to know?",
           timestamp: new Date()
         });
       }
@@ -233,6 +294,17 @@ export class ConversationSystem {
 
   public setAnswerCallback(callback: (question: string) => Promise<string>): void {
     this.onAnswerCallback = callback;
+  }
+
+  public setModelSwitchCallback(callback: (modelName: string) => Promise<boolean>): void {
+    this.onModelSwitchCallback = callback;
+  }
+
+  public updateModelSelector(currentModel: string): void {
+    const modelSelector = document.querySelector("#model-selector") as HTMLSelectElement;
+    if (modelSelector) {
+      modelSelector.value = currentModel;
+    }
   }
 
   private async handleSendMessage(): Promise<void> {
