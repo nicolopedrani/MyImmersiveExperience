@@ -7,8 +7,8 @@ import { setupInputListeners, setupTouchControls } from "./modules/input";
 import { setupCanvas, scaleCanvasToWindow } from "./modules/canvas";
 import { getCurrentRoom, initializeRoomSystem } from "./modules/roomManager";
 import { initializeBossInteraction, checkBossProximity } from "./modules/bossInteraction";
-import { ConversationSystem } from "./modules/conversation";
 import { answerQuestion, getFallbackResponse, isAIReady, switchModel, getCurrentModelKey, setProgressUpdateCallback, startBackgroundLoading, setBackgroundProgressCallback } from "./modules/aiProcessor";
+import { gameBoyConversation } from "./modules/gameboyConversation";
 
 // --- Setup canvas ---
 const dummyMap = Array(MAP_HEIGHT_TILES)
@@ -41,49 +41,13 @@ console.log(
 scaleCanvasToWindow(canvas);
 window.addEventListener("resize", () => scaleCanvasToWindow(canvas));
 
-// --- Initialize conversation system ---
-const conversationSystem = new ConversationSystem();
+// --- Initialize GameBoy conversation system ---
+// The gameBoyConversation is automatically initialized when imported
 
-// Setup boss conversation event handler
-document.addEventListener('startBossConversation', () => {
-  conversationSystem.showConversation();
-  // Update the model selector to show the currently active model
-  setTimeout(() => {
-    conversationSystem.updateModelSelector(getCurrentModelKey());
-  }, 300);
-});
-
-// Setup AI answer callback
-conversationSystem.setAnswerCallback(async (question: string): Promise<string> => {
-  if (isAIReady()) {
-    return await answerQuestion(question);
-  } else {
-    // Use fallback response while AI is loading
-    return getFallbackResponse(question);
-  }
-});
-
-// Setup model switching callback for in-game model selection
-conversationSystem.setModelSwitchCallback(async (modelName: string): Promise<boolean> => {
-  console.log(`🔄 Switching to ${modelName} model...`);
-  try {
-    const success = await switchModel(modelName);
-    if (success) {
-      console.log(`✅ Successfully switched to ${modelName} model!`);
-    } else {
-      console.error(`❌ Failed to switch to ${modelName} model`);
-    }
-    return success;
-  } catch (error) {
-    console.error(`💥 Error switching to ${modelName} model:`, error);
-    return false;
-  }
-});
-
-// Setup real-time progress callback for download progress
-setProgressUpdateCallback((modelKey: string, percentage: number, loaded: string, total: string, remaining: string, rate?: number) => {
-  conversationSystem.updateRealProgress(modelKey, percentage, loaded, total, remaining, rate);
-});
+// Setup real-time progress callback for download progress (currently unused in GameBoy style)
+// setProgressUpdateCallback((modelKey: string, percentage: number, loaded: string, total: string, remaining: string, rate?: number) => {
+//   // Progress updates can be added to GameBoy conversation later if needed
+// });
 
 // Setup background loading progress callback
 setBackgroundProgressCallback((modelKey: string, status: string, progress?: number) => {
@@ -117,7 +81,7 @@ function gameLoop(currentTime: number): void {
   updatePlayerAnimation(deltaTime);
   
   // Check boss proximity (only if conversation is not active)
-  if (!conversationSystem.isConversationActive()) {
+  if (!gameBoyConversation.isConversationActive()) {
     checkBossProximity();
   }
 
@@ -688,56 +652,12 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
   // Draw player
   drawPlayer(ctx, tileSize);
 
-  // Draw room information
-  drawRoomInfo(ctx, currentRoom);
+  // Room titles/subtitles removed as requested - using status bar instead
 
   // No more hobby labels - removed as requested
 }
 
-function drawRoomInfo(ctx: CanvasRenderingContext2D, room: any): void {
-  // Room name
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 18px Arial";
-  ctx.textAlign = "left";
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 3;
-
-  // Text with outline for better visibility
-  ctx.strokeText(room.name, 15, 35);
-  ctx.fillText(room.name, 15, 35);
-
-  // Room description (if available and room is not the central hub)
-  if (room.description && room.id !== "room1") {
-    ctx.font = "12px Arial";
-    ctx.fillStyle = "#E0E0E0";
-
-    // Word wrap the description
-    const maxWidth = GAME_WIDTH - 30;
-    const words = room.description.split(" ");
-    let line = "";
-    let y = 55;
-
-    for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + " ";
-      const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
-
-      if (testWidth > maxWidth && n > 0) {
-        ctx.strokeText(line, 15, y);
-        ctx.fillText(line, 15, y);
-        line = words[n] + " ";
-        y += 16;
-      } else {
-        line = testLine;
-      }
-    }
-
-    if (line) {
-      ctx.strokeText(line, 15, y);
-      ctx.fillText(line, 15, y);
-    }
-  }
-}
+// drawRoomInfo function removed - room information now shown in status bar
 
 
 // Usage instructions to replace in main.ts:

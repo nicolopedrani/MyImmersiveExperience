@@ -1,7 +1,8 @@
 // modules/bossInteraction.ts - Boss proximity detection and interaction system
 
 import { player } from "./player";
-import { getCurrentRoom } from "./roomManager";
+import { getCurrentRoom, updateStatusBar } from "./roomManager";
+import { gameBoyConversation } from "./gameboyConversation";
 
 let isNearBoss = false;
 let interactionPromptElement: HTMLDivElement | null = null;
@@ -90,31 +91,15 @@ export function checkBossProximity(): boolean {
 }
 
 function showInteractionPrompt(): void {
-  if (interactionPromptElement) {
-    interactionPromptElement.style.display = "block";
-    
-    // Clear any existing timeout
-    if (bossPromptTimeoutId) {
-      clearTimeout(bossPromptTimeoutId);
-    }
-    
-    // Auto-hide prompt after timeout
-    bossPromptTimeoutId = window.setTimeout(() => {
-      hideInteractionPrompt();
-      console.log("Boss interaction prompt auto-dismissed after timeout");
-    }, BOSS_PROMPT_TIMEOUT);
-  }
+  // Show message in status bar instead of popup
+  updateStatusBar("💬 Press SPACE to talk to Nicolo - Ask about my CV!", 4000);
 }
 
 function hideInteractionPrompt(): void {
-  if (interactionPromptElement) {
-    interactionPromptElement.style.display = "none";
-  }
-  
-  // Clear timeout if prompt is manually hidden
-  if (bossPromptTimeoutId) {
-    clearTimeout(bossPromptTimeoutId);
-    bossPromptTimeoutId = null;
+  // Clear status bar if it's showing boss interaction message
+  const statusText = document.getElementById("status-text");
+  if (statusText && statusText.textContent?.includes("talk to Nicolo")) {
+    statusText.textContent = "";
   }
 }
 

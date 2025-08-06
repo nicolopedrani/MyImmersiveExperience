@@ -3,6 +3,31 @@
 import { rooms, currentRoom, Room, Door } from "./map";
 import { player } from "./player";
 
+// Status bar management
+let statusBarTimeoutId: number | null = null;
+
+function updateStatusBar(message: string, duration?: number): void {
+  const statusText = document.getElementById("status-text");
+  if (statusText) {
+    statusText.textContent = message;
+    
+    // Clear any existing timeout
+    if (statusBarTimeoutId) {
+      clearTimeout(statusBarTimeoutId);
+    }
+    
+    // Auto-clear after duration (default 3 seconds)
+    const hideDelay = duration || 3000;
+    statusBarTimeoutId = window.setTimeout(() => {
+      if (statusText) {
+        statusText.textContent = "";
+      }
+    }, hideDelay);
+  }
+}
+
+export { updateStatusBar };
+
 let activeRoom: Room = rooms.room1;
 
 export function getCurrentRoom(): Room {
@@ -40,57 +65,10 @@ export function changeRoom(roomId: string): boolean {
 }
 
 function announceRoomEntry(newRoom: Room, previousRoom: Room): void {
-  // Create a temporary room announcement
-  const announcement = document.createElement("div");
-  announcement.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 20px 30px;
-    border-radius: 12px;
-    font-family: Arial, sans-serif;
-    font-size: 20px;
-    font-weight: bold;
-    text-align: center;
-    z-index: 2000;
-    border: 3px solid #fff;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.7);
-    animation: fadeInOut 3s ease-in-out forwards;
-  `;
-
-  // Add CSS animation
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes fadeInOut {
-      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-      20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-    }
-  `;
-  document.head.appendChild(style);
-
-  announcement.innerHTML = `
-    <div style="font-size: 24px; margin-bottom: 10px;">${newRoom.name}</div>
-    <div style="font-size: 16px; opacity: 0.8;">${
-      newRoom.description || ""
-    }</div>
-  `;
-
-  document.body.appendChild(announcement);
-
-  // Remove announcement after animation (reduced from 3000ms to 2000ms)
-  setTimeout(() => {
-    if (document.body.contains(announcement)) {
-      document.body.removeChild(announcement);
-    }
-    if (document.head.contains(style)) {
-      document.head.removeChild(style);
-    }
-  }, 2000);
+  // Only show room name briefly in status bar
+  if (newRoom.id !== previousRoom.id) {
+    updateStatusBar(newRoom.name, 2000);
+  }
 }
 
 export function checkForDoorInteraction(): boolean {

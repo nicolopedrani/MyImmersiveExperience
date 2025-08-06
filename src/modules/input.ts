@@ -2,9 +2,10 @@
 
 import { player, playerAnimations, Direction, AnimationState } from "./player";
 import { getCurrentRoom } from "./roomManager";
-import { checkForDoorInteraction, getDoorAtPosition } from "./roomManager";
+import { checkForDoorInteraction, getDoorAtPosition, updateStatusBar } from "./roomManager";
 import { WALKABLE_TILES } from "./map";
 import { isBossInteractionAvailable } from "./bossInteraction";
+import { gameBoyConversation } from "./gameboyConversation";
 
 let keysPressed: { [key: string]: boolean } = {};
 let currentDoorMessage: string | null = null;
@@ -47,41 +48,31 @@ function createMessageDisplay(): void {
 }
 
 function showDoorMessage(message: string): void {
-  if (messageDisplayElement) {
-    messageDisplayElement.textContent = message;
-    messageDisplayElement.style.display = "block";
-    currentDoorMessage = message;
-    
-    // Clear any existing timeout
-    if (messageTimeoutId) {
-      clearTimeout(messageTimeoutId);
-    }
-    
-    // Auto-hide message after timeout
-    messageTimeoutId = window.setTimeout(() => {
-      hideDoorMessage();
-    }, MESSAGE_TIMEOUT);
-  }
+  updateStatusBar(message, 5000); // Show door messages for 5 seconds
+  currentDoorMessage = message;
 }
 
 function hideDoorMessage(): void {
-  if (messageDisplayElement) {
-    messageDisplayElement.style.display = "none";
-    currentDoorMessage = null;
+  // Clear status bar if it's showing the door message
+  const statusText = document.getElementById("status-text");
+  if (statusText && statusText.textContent === currentDoorMessage) {
+    statusText.textContent = "";
   }
-  
-  // Clear timeout if message is manually hidden
-  if (messageTimeoutId) {
-    clearTimeout(messageTimeoutId);
-    messageTimeoutId = null;
-  }
+  currentDoorMessage = null;
 }
 
 function handleKeyDown(e: KeyboardEvent): void {
+  // Handle ESC key to exit conversation
+  if (e.key === 'Escape' && gameBoyConversation.isConversationActive()) {
+    gameBoyConversation.hideConversation();
+    e.preventDefault();
+    return;
+  }
+
   // Check if any input field is focused (conversation system)
   const activeElement = document.activeElement;
   if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-    // Don't handle game controls when input field is focused
+    // Don't handle game controls when input field is focused (except ESC handled above)
     return;
   }
 
@@ -113,13 +104,11 @@ function handleKeyDown(e: KeyboardEvent): void {
         // Only trigger once per press
         console.log("Action button pressed!");
 
-        // Check for boss interaction first
-        if (isBossInteractionAvailable()) {
-          console.log("Starting boss conversation!");
-          // Import and trigger conversation - we'll implement this in main.ts
-          const event = new CustomEvent('startBossConversation');
-          document.dispatchEvent(event);
-        } else {
+        // Check for boss interaction first (only if conversation is not active)
+        if (isBossInteractionAvailable() && !gameBoyConversation.isConversationActive()) {
+          console.log("Starting GameBoy-style boss conversation!");
+          gameBoyConversation.showConversation();
+        } else if (!gameBoyConversation.isConversationActive()) {
           // Check if the player is on a door
           const door = getDoorAtPosition(player.x, player.y);
           if (door) {

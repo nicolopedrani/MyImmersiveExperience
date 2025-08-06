@@ -1,158 +1,252 @@
-body {
+/* GameBoy-Inspired Full-Screen Design */
+* {
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #222;
-  color: #eee;
-  font-family: Arial, sans-serif;
+  box-sizing: border-box;
 }
 
-h1 {
-  margin: 10px 0;
-  text-align: center;
-  font-size: 1.5rem;
-}
-
-#game-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
+html, body {
   width: 100%;
-  height: 100vh;
-  position: relative;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+  background: #2a2a2a; /* Dark bezel color */
 }
 
-/* Canvas con ID specifico */
+/* GameBoy Container - Full Screen */
+#gameboy-container {
+  width: 100vw;
+  height: 100vh;
+  background: #2a2a2a; /* Dark bezel background */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 20px;
+}
+
+/* Screen Area - Takes most of the space */
+#screen-area {
+  background: #1a1a1a; /* Darker inner bezel */
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 
+    inset 0 0 20px rgba(0,0,0,0.8),
+    0 0 30px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 800px;
+  flex-grow: 1;
+  max-height: 70vh;
+  position: relative; /* For absolute positioned message area */
+}
+
+/* Game Canvas */
 #gameCanvas {
-  border: 2px solid #fff;
-  background-color: #000;
+  background-color: #2d5a3d; /* Natural green base color */
+  border: 3px solid #0a0a0a;
+  border-radius: 8px;
   display: block;
-  max-width: 90vw;
-  max-height: 65vh; /* Ridotto da 75vh a 65vh per fare spazio ai controlli */
-  width: auto;
+  width: 100%;
   height: auto;
-  margin-top: 20px;
-  image-rendering: pixelated; /* Per pixel art */
+  max-height: 100%;
+  image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
+  flex-grow: 1;
 }
 
+/* Status Bar - White like Pokémon games */
+#status-bar {
+  background: white;
+  color: #000;
+  padding: 8px 15px;
+  border-radius: 0 0 8px 8px;
+  border: 2px solid #0a0a0a;
+  border-top: none;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  min-height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* GameBoy Conversation Message Area */
+#gameboy-message-area {
+  /* Styles are set dynamically in JavaScript */
+}
+
+/* Controls Area */
+#controls-area {
+  width: 100%;
+  max-width: 800px;
+  margin-top: 20px;
+  padding: 15px;
+  background: #2a2a2a; /* Same as bezel */
+  border-radius: 15px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Touch Controls - GameBoy D-Pad Style */
 #touch-controls {
-  position: fixed;
-  bottom: 30px; /* Aumentato da 20px a 30px */
-  left: 50%;
-  transform: translateX(-50%);
   display: grid;
   grid-template-areas:
     ". up ."
     "left action right"
     ". down .";
-  gap: 5px; /* Ridotto da 8px a 5px per avvicinare i tasti */
+  gap: 8px;
   user-select: none;
-  z-index: 1000;
 }
 
 #touch-controls button {
-  padding: 8px 12px;
-  font-size: 28px; /* Aumentato da 24px a 28px */
-  border: none;
-  border-radius: 50%;
-  background: transparent;
+  padding: 15px;
+  font-size: 24px;
+  border: 3px solid #1a1a1a;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #3a3a3a, #1a1a1a);
   color: #fff;
   cursor: pointer;
-  width: 55px; /* Aumentato da 50px a 55px */
-  height: 55px; /* Aumentato da 50px a 55px */
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.1s ease;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  box-shadow: 
+    0 4px 8px rgba(0,0,0,0.4),
+    inset 0 1px 3px rgba(255,255,255,0.1);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
 
 #touch-controls button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
+  background: linear-gradient(145deg, #4a4a4a, #2a2a2a);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 12px rgba(0,0,0,0.6),
+    inset 0 1px 3px rgba(255,255,255,0.2);
 }
 
 #touch-controls button:active {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: scale(0.95);
+  background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+  transform: translateY(1px);
+  box-shadow: 
+    0 2px 4px rgba(0,0,0,0.3),
+    inset 0 2px 4px rgba(0,0,0,0.5);
 }
 
-#btn-up {
-  grid-area: up;
-}
-#btn-down {
-  grid-area: down;
-}
-#btn-left {
-  grid-area: left;
-}
-#btn-right {
-  grid-area: right;
-}
+/* Button positioning */
+#btn-up { grid-area: up; }
+#btn-down { grid-area: down; }
+#btn-left { grid-area: left; }
+#btn-right { grid-area: right; }
+
 #btn-action {
   grid-area: action;
-  background-color: rgba(255, 102, 0, 0.3);
-  border: 2px solid #ff6600;
-  color: #ff6600;
+  background: linear-gradient(145deg, #ff6b4a, #d63447);
+  border-color: #a02325;
+  color: #fff;
 }
 
 #btn-action:hover {
-  background-color: rgba(255, 102, 0, 0.5);
-  color: #fff;
+  background: linear-gradient(145deg, #ff7b5a, #e63447);
 }
 
 #btn-action:active {
-  background-color: rgba(255, 102, 0, 0.7);
-  color: #fff;
+  background: linear-gradient(145deg, #d63447, #a02325);
 }
 
-/* Rimuovi la classe middle-row dall'HTML se presente */
-#middle-row {
-  display: contents;
-}
-
-/* Debug panel */
+/* Debug Panel */
 #debug-panel {
   position: fixed !important;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.8);
-  color: #0f0;
-  padding: 8px;
-  font-family: "Courier New", monospace;
-  font-size: 12px;
-  z-index: 1000;
-  border: 1px solid #333;
-  border-radius: 4px;
+  top: 15px;
+  left: 15px;
+  background: rgba(0, 0, 0, 0.9);
+  color: #00ff00;
+  padding: 10px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  z-index: 2000;
+  border: 2px solid #333;
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 0 15px rgba(0,0,0,0.7);
 }
 
-/* Responsive */
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
-  h1 {
-    font-size: 1.2rem;
-    margin: 5px 0;
+  #gameboy-container {
+    padding: 10px;
   }
-
-  #gameCanvas {
-    max-width: 95vw;
-    max-height: 60vh; /* Ridotto per mobile */
+  
+  #screen-area {
+    max-height: 75vh;
+    padding: 10px;
   }
-
-  #touch-controls {
-    bottom: 20px; /* Più vicino in basso su mobile */
+  
+  #status-bar {
+    font-size: 12px;
+    padding: 6px 10px;
+    min-height: 30px;
   }
-
+  
+  #controls-area {
+    margin-top: 10px;
+    padding: 10px;
+  }
+  
   #touch-controls button {
     width: 50px;
     height: 50px;
-    font-size: 24px;
+    font-size: 20px;
+    padding: 12px;
+  }
+}
+
+@media (max-height: 600px) {
+  #screen-area {
+    max-height: 65vh;
+  }
+  
+  #controls-area {
+    margin-top: 10px;
+  }
+  
+  #touch-controls button {
+    width: 45px;
+    height: 45px;
+    font-size: 18px;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  #gameboy-container {
+    flex-direction: row;
+    padding: 5px;
+  }
+  
+  #screen-area {
+    max-height: 90vh;
+    max-width: 70vw;
+    margin-right: 10px;
+  }
+  
+  #controls-area {
+    margin-top: 0;
+    margin-left: 10px;
+    flex-shrink: 0;
+  }
+  
+  #touch-controls button {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
   }
 }

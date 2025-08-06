@@ -61,59 +61,59 @@
 // 74 = main_guy (non-walkable - Boss character from MainGuySpriteSheet.png)
 // 75 = flower (non-walkable - Decorative flowers with grass background)
 
-export const MAP_WIDTH_TILES = 12;
+export const MAP_WIDTH_TILES = 11;
 export const MAP_HEIGHT_TILES = 9;
 
-// Central Hub - Enhanced with trees (no bushes) from assets.png
+// Central Hub - Enhanced with trees (no bushes) from assets.png - 11 tiles wide
 export const room1Map: number[][] = [
-  [0, 14, 0, 1, 1, 6, 1, 1, 0, 14, 0, 0], // Door NORTH with oak trees and asset trees
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // No bushes
-  [0, 1, 0, 14, 0, 2, 0, 14, 0, 1, 0, 0], // Mix of oak trees and asset trees
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Clean grass areas
-  [6, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6], // Main walkable cross path
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Clean grass areas
-  [0, 1, 0, 14, 0, 2, 0, 14, 0, 1, 0, 0], // More trees variety
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Clean near player start
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border (non-walkable)
+  [0, 14, 0, 1, 1, 6, 1, 1, 0, 14, 0], // Door NORTH with oak trees and asset trees (removed last tile)
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], // No bushes
+  [0, 1, 0, 14, 0, 2, 0, 14, 0, 1, 0], // Mix of oak trees and asset trees  
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], // Clean grass areas
+  [6, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6], // Main walkable cross path (perfect symmetry: center at tile 5)
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], // Clean grass areas
+  [0, 1, 0, 14, 0, 2, 0, 14, 0, 1, 0], // More trees variety
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], // Clean near player start
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border (non-walkable)
 ];
 
-// Boss Room - Natural environment with trees, flowers, and straight path to centered character
+// Boss Room - Natural environment with trees, flowers, and straight path to centered character - 11 tiles wide
 export const room2Map: number[][] = [
-  [0, 1, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0], // Trees in corners for natural feel
-  [0, 0, 0, 0, 0, 74, 0, 0, 0, 0, 0, 1], // MAIN CHARACTER centered (x=5) with tree on right
-  [1, 75, 0, 0, 0, 2, 0, 0, 0, 75, 0, 0], // Oak tree left, straight path with decorative flowers
-  [0, 0, 0, 14, 0, 2, 0, 14, 0, 0, 0, 0], // Asset trees flanking the path
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Clear path continues
-  [0, 75, 0, 0, 0, 2, 0, 0, 0, 75, 1, 0], // Flowers and oak tree on right
-  [14, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Asset tree on left, clear path
-  [0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 0, 14], // Oak trees flanking approach, asset tree on right
-  [0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0], // Entrance door with grass
+  [0, 1, 0, 0, 0, 0, 0, 0, 0, 14, 0], // Trees in corners for natural feel (removed last tile)
+  [0, 0, 0, 0, 0, 74, 0, 0, 0, 0, 1], // MAIN CHARACTER centered (x=5) with tree on right
+  [1, 75, 0, 0, 0, 2, 0, 0, 0, 75, 0], // Oak tree left, straight path with decorative flowers
+  [0, 0, 0, 14, 0, 2, 0, 14, 0, 0, 0], // Asset trees flanking the path
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], // Clear path continues
+  [0, 75, 0, 0, 0, 2, 0, 0, 0, 75, 0], // Flowers (removed oak tree on right)
+  [14, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], // Asset tree on left, clear path
+  [0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 14], // Oak trees flanking approach, asset tree on right
+  [0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0], // Entrance door with grass
 ];
 
-// Working Experience Room - Split: Data Scientist (left) + R&D Engineer (right)
+// Working Experience Room - Split: Data Scientist (left) + R&D Engineer (right) - 11 tiles wide
 export const room3Map: number[][] = [
-  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
-  [59, 29, 30, 31, 32, 2, 45, 46, 47, 48, 7, 59], // Data Science: NPS + Energy + Fashion + Supply Chain | R&D: IR Spectrum + Atmospheric + Multi-Camera + Leonardo + Office floor
-  [59, 7, 7, 7, 7, 2, 7, 12, 11, 7, 7, 59], // Data Science: Office floor | R&D: Office floor + table + chair
-  [59, 33, 34, 35, 40, 2, 49, 50, 51, 2, 7, 59], // Data Science: Histogram + Box Plot + Deloitte + Rec Tree | R&D: Object Detection + Kalman + Optical Flow + walkable + office
-  [59, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6], // Central walkable path + exit door
-  [59, 36, 37, 38, 39, 2, 52, 53, 54, 2, 7, 59], // Data Science: Power BI + Tech stacks | R&D: 360° Coverage + Threat Interface + Multi-Target + walkable + office
-  [59, 7, 11, 12, 7, 2, 7, 7, 7, 7, 7, 59], // Data Science: Desk setup | R&D: Office floor
-  [59, 41, 42, 43, 44, 2, 55, 56, 57, 58, 7, 59], // Data Science: Azure + Chatbot + Gantt | R&D: MATLAB + Architecture + Requirements + IR Detector + office
-  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
+  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border (removed last tile)
+  [59, 29, 30, 31, 32, 2, 45, 46, 47, 48, 59], // Data Science: NPS + Energy + Fashion + Supply Chain | R&D: IR Spectrum + Atmospheric + Multi-Camera + Leonardo
+  [59, 7, 7, 7, 7, 2, 7, 12, 11, 7, 59], // Data Science: Office floor | R&D: Office floor + table + chair
+  [59, 33, 34, 35, 40, 2, 49, 50, 51, 7, 59], // Data Science: Histogram + Box Plot + Deloitte + Rec Tree | R&D: Object Detection + Kalman + Optical Flow + office
+  [59, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6], // Central walkable path + exit door (perfect center at tile 5)
+  [59, 36, 37, 38, 39, 2, 52, 53, 54, 7, 59], // Data Science: Power BI + Tech stacks | R&D: 360° Coverage + Threat Interface + Multi-Target + office
+  [59, 7, 11, 12, 7, 2, 7, 7, 7, 7, 59], // Data Science: Desk setup | R&D: Office floor
+  [59, 41, 42, 43, 44, 2, 55, 56, 57, 58, 59], // Data Science: Azure + Chatbot + Gantt | R&D: MATLAB + Architecture + Requirements + IR Detector
+  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
 ];
 
-// Hobbies Room - Centered layout with brick walls and unique travel flags
+// Hobbies Room - Centered layout with brick walls and unique travel flags - 11 tiles wide  
 export const room4Map: number[][] = [
-  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
-  [59, 8, 8, 65, 7, 28, 7, 61, 8, 8, 7, 59], // Library: Bookshelves + Italy flag + WORLD MAP + US flag + bookshelves
-  [59, 7, 11, 12, 2, 2, 2, 2, 7, 7, 7, 59], // Reading area: table + chair + central path + library floor
-  [59, 13, 7, 7, 16, 17, 18, 19, 2, 66, 62, 59], // Library rug + football field row 1 + France & Japan flags
-  [6, 2, 2, 2, 20, 21, 22, 23, 2, 2, 2, 59], // Entrance + football field row 2 + path
-  [59, 67, 7, 7, 24, 25, 26, 27, 2, 7, 7, 59], // Germany flag + football field row 3 + library floor
-  [59, 7, 7, 8, 2, 2, 2, 2, 60, 68, 7, 59], // Library floor + bookshelf + central path + Australia & Spain flags
-  [59, 8, 73, 7, 7, 7, 7, 7, 7, 8, 7, 59], // Bookshelves + Egypt flag + library floor + bookshelves
-  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
+  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border (removed last tile)
+  [59, 8, 8, 65, 7, 28, 7, 61, 8, 8, 59], // Library: Bookshelves + Italy flag + WORLD MAP + US flag + bookshelves
+  [59, 7, 11, 12, 2, 2, 2, 2, 7, 7, 59], // Reading area: table + chair + central path + library floor
+  [59, 13, 7, 7, 16, 17, 18, 19, 2, 66, 59], // Library rug + football field row 1 + France flag (removed Japan flag)
+  [6, 2, 2, 2, 20, 21, 22, 23, 2, 2, 59], // Entrance + football field row 2 + path (perfect center)
+  [59, 67, 7, 62, 24, 25, 26, 27, 2, 7, 59], // Germany flag + Japan flag + football field row 3 + library floor
+  [59, 7, 7, 8, 2, 2, 2, 2, 60, 68, 59], // Library floor + bookshelf + central path + Australia & Spain flags
+  [59, 8, 73, 7, 7, 7, 7, 7, 7, 8, 59], // Bookshelves + Egypt flag + library floor + bookshelves
+  [59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59], // Brick wall border
 ];
 
 export interface Room {
@@ -157,12 +157,12 @@ export const rooms: { [key: string]: Room } = {
         x: 0,
         y: 4,
         targetRoom: "room3",
-        targetX: 10,
+        targetX: 9,
         targetY: 4,
         description: "Press SPACE to enter the Work Experience Room",
       },
       {
-        x: 11,
+        x: 10,
         y: 4,
         targetRoom: "room4",
         targetX: 1,
@@ -194,12 +194,12 @@ export const rooms: { [key: string]: Room } = {
     id: "room3",
     name: "Work Experience",
     map: room3Map,
-    playerStartX: 10,
+    playerStartX: 9,
     playerStartY: 4,
     description: "Explore my professional journey and key accomplishments.",
     doors: [
       {
-        x: 11,
+        x: 10,
         y: 4,
         targetRoom: "room1",
         targetX: 1,
@@ -221,7 +221,7 @@ export const rooms: { [key: string]: Room } = {
         x: 0,
         y: 4,
         targetRoom: "room1",
-        targetX: 10,
+        targetX: 9,
         targetY: 4,
         description: "Press SPACE to return to Central Hub",
       },
