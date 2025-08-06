@@ -10,7 +10,9 @@ let keysPressed: { [key: string]: boolean } = {};
 let currentDoorMessage: string | null = null;
 let messageDisplayElement: HTMLDivElement | null = null;
 let movementInterval: number | null = null;
+let messageTimeoutId: number | null = null;
 const MOVEMENT_SPEED = 200; // milliseconds between moves when key is held
+const MESSAGE_TIMEOUT = 2000; // Auto-hide door messages after 2 seconds
 
 export function setupInputListeners(): void {
   document.addEventListener("keydown", handleKeyDown);
@@ -49,6 +51,16 @@ function showDoorMessage(message: string): void {
     messageDisplayElement.textContent = message;
     messageDisplayElement.style.display = "block";
     currentDoorMessage = message;
+    
+    // Clear any existing timeout
+    if (messageTimeoutId) {
+      clearTimeout(messageTimeoutId);
+    }
+    
+    // Auto-hide message after timeout
+    messageTimeoutId = window.setTimeout(() => {
+      hideDoorMessage();
+    }, MESSAGE_TIMEOUT);
   }
 }
 
@@ -56,6 +68,12 @@ function hideDoorMessage(): void {
   if (messageDisplayElement) {
     messageDisplayElement.style.display = "none";
     currentDoorMessage = null;
+  }
+  
+  // Clear timeout if message is manually hidden
+  if (messageTimeoutId) {
+    clearTimeout(messageTimeoutId);
+    messageTimeoutId = null;
   }
 }
 

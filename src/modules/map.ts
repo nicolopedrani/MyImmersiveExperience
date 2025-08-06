@@ -77,16 +77,16 @@ export const room1Map: number[][] = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Grass border (non-walkable)
 ];
 
-// Boss Room - Natural environment with straight path to centered character
+// Boss Room - Natural environment with trees, flowers, and straight path to centered character
 export const room2Map: number[][] = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Standard grass background (non-walkable)
-  [0, 0, 0, 0, 0, 74, 0, 0, 0, 0, 0, 0], // MAIN CHARACTER centered (x=5)
-  [0, 75, 0, 0, 0, 2, 0, 0, 0, 75, 0, 0], // Straight path with decorative flowers
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Straight path continues
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Straight path continues
-  [0, 75, 0, 0, 0, 2, 0, 0, 0, 75, 0, 0], // Straight path with decorative flowers
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Straight path continues
-  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Straight path approaches entrance
+  [0, 1, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0], // Trees in corners for natural feel
+  [0, 0, 0, 0, 0, 74, 0, 0, 0, 0, 0, 1], // MAIN CHARACTER centered (x=5) with tree on right
+  [1, 75, 0, 0, 0, 2, 0, 0, 0, 75, 0, 0], // Oak tree left, straight path with decorative flowers
+  [0, 0, 0, 14, 0, 2, 0, 14, 0, 0, 0, 0], // Asset trees flanking the path
+  [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Clear path continues
+  [0, 75, 0, 0, 0, 2, 0, 0, 0, 75, 1, 0], // Flowers and oak tree on right
+  [14, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0], // Asset tree on left, clear path
+  [0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 0, 14], // Oak trees flanking approach, asset tree on right
   [0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0], // Entrance door with grass
 ];
 

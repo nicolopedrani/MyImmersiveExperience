@@ -1,6 +1,6 @@
 // modules/aiProcessor.ts - AI processing with Transformers.js integration
 
-import { pipeline } from "@huggingface/transformers";
+import { pipeline } from "@xenova/transformers";
 
 interface CVContext {
   personalInfo: string;

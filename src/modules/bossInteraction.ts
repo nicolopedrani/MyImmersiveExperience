@@ -5,10 +5,12 @@ import { getCurrentRoom } from "./roomManager";
 
 let isNearBoss = false;
 let interactionPromptElement: HTMLDivElement | null = null;
+let bossPromptTimeoutId: number | null = null;
 
 // Boss character position in room2 (boss room)
 const BOSS_POSITION = { x: 5, y: 1 };
 const INTERACTION_DISTANCE = 1; // Adjacent tiles
+const BOSS_PROMPT_TIMEOUT = 2000; // Auto-hide boss prompt after 2 seconds
 
 export function initializeBossInteraction(): void {
   createInteractionPrompt();
@@ -90,12 +92,29 @@ export function checkBossProximity(): boolean {
 function showInteractionPrompt(): void {
   if (interactionPromptElement) {
     interactionPromptElement.style.display = "block";
+    
+    // Clear any existing timeout
+    if (bossPromptTimeoutId) {
+      clearTimeout(bossPromptTimeoutId);
+    }
+    
+    // Auto-hide prompt after timeout
+    bossPromptTimeoutId = window.setTimeout(() => {
+      hideInteractionPrompt();
+      console.log("Boss interaction prompt auto-dismissed after timeout");
+    }, BOSS_PROMPT_TIMEOUT);
   }
 }
 
 function hideInteractionPrompt(): void {
   if (interactionPromptElement) {
     interactionPromptElement.style.display = "none";
+  }
+  
+  // Clear timeout if prompt is manually hidden
+  if (bossPromptTimeoutId) {
+    clearTimeout(bossPromptTimeoutId);
+    bossPromptTimeoutId = null;
   }
 }
 

@@ -82,11 +82,15 @@ function announceRoomEntry(newRoom: Room, previousRoom: Room): void {
 
   document.body.appendChild(announcement);
 
-  // Remove announcement after animation
+  // Remove announcement after animation (reduced from 3000ms to 2000ms)
   setTimeout(() => {
-    document.body.removeChild(announcement);
-    document.head.removeChild(style);
-  }, 3000);
+    if (document.body.contains(announcement)) {
+      document.body.removeChild(announcement);
+    }
+    if (document.head.contains(style)) {
+      document.head.removeChild(style);
+    }
+  }, 2000);
 }
 
 export function checkForDoorInteraction(): boolean {

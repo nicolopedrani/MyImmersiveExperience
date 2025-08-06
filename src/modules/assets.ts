@@ -15,7 +15,7 @@ import travelFlagsImg from "../../assets/travel_flags_tilesheet.png";
 const assets: { [key: string]: HTMLImageElement } = {};
 const tileCache: { [key: string]: HTMLCanvasElement } = {};
 let loaded: number = 0;
-const totalAssets: number = 8;
+const totalAssets: number = 9;
 let callbackWhenDone: (() => void) | null = null;
 
 // Hardcoded metadata based on your JSON files to avoid loading issues
