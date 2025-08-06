@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>La Mia Esperienza Interattiva</title>
-    <script type="module" crossorigin src="/MyImmersiveExperience/assets/index-CXS57Kz5.js"></script>
-    <link rel="modulepreload" crossorigin href="/MyImmersiveExperience/assets/game-BARn0yUE.js">
-    <link rel="stylesheet" crossorigin href="/MyImmersiveExperience/assets/index-CjifeWCC.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Interactive Portfolio Experience</title>
+    <script type="module" crossorigin src="/MyImmersiveExperience/assets/index-B0qOFeEU.js"></script>
+    <link rel="modulepreload" crossorigin href="/MyImmersiveExperience/assets/game-CudpEz85.js">
+    <link rel="stylesheet" crossorigin href="/MyImmersiveExperience/assets/index-Bb_75X8j.css">
   </head>
   <body>
     <div
@@ -26,18 +26,23 @@
       "
     ></div>
 
-    <h1>Benvenuto nella Mia Esperienza Interattiva!</h1>
-
-    <div id="game-container">
-      <canvas id="gameCanvas"></canvas>
-
-      <!-- Controlli touch con layout grid -->
-      <div id="touch-controls">
-        <button id="btn-up">⬆️</button>
-        <button id="btn-left">⬅️</button>
-        <button id="btn-action">⚡</button>
-        <button id="btn-right">➡️</button>
-        <button id="btn-down">⬇️</button>
+    <!-- GameBoy-inspired full-screen layout -->
+    <div id="gameboy-container">
+      <div id="screen-area">
+        <canvas id="gameCanvas"></canvas>
+        <div id="status-bar">
+          <span id="status-text"></span>
+        </div>
+      </div>
+      
+      <div id="controls-area">
+        <div id="touch-controls">
+          <button id="btn-up">⬆️</button>
+          <button id="btn-left">⬅️</button>
+          <button id="btn-action">⚡</button>
+          <button id="btn-right">➡️</button>
+          <button id="btn-down">⬇️</button>
+        </div>
       </div>
     </div>
 
