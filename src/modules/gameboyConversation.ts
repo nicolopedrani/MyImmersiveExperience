@@ -21,6 +21,7 @@ class GameBoyConversation {
   private inputArea: HTMLDivElement | null = null;
   private responseArea: HTMLDivElement | null = null;
   private textInput: HTMLInputElement | null = null;
+  private closeButton: HTMLButtonElement | null = null;
 
   constructor() {
     this.initialize();
@@ -82,6 +83,31 @@ class GameBoyConversation {
     this.modelSelector.innerHTML = `
       <option value="distilbert">❓ DistilBERT Q&A</option>
       <option value="qwen">💬 Qwen2.5 Chat</option>
+    `;
+
+    // Create close button for mobile
+    this.closeButton = document.createElement('button');
+    this.closeButton.id = 'conversation-close-button';
+    this.closeButton.textContent = '✕';
+    this.closeButton.style.cssText = `
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 20;
     `;
 
     // Create input area
@@ -151,6 +177,7 @@ class GameBoyConversation {
     this.inputArea.appendChild(sendButton);
     
     this.messageArea.appendChild(this.modelSelector);
+    this.messageArea.appendChild(this.closeButton);
     this.messageArea.appendChild(this.inputArea);
     this.messageArea.appendChild(this.responseArea);
 
@@ -170,6 +197,7 @@ class GameBoyConversation {
     });
 
     this.modelSelector.addEventListener('change', () => this.handleModelChange());
+    this.closeButton.addEventListener('click', () => this.hideConversation());
 
     // Global escape listener
     document.addEventListener('keydown', (e) => {
@@ -196,6 +224,7 @@ class GameBoyConversation {
 
     // Show input elements immediately (no delay for smooth interaction)
     if (this.modelSelector) this.modelSelector.style.opacity = '1';
+    if (this.closeButton) this.closeButton.style.opacity = '1';
     if (this.inputArea) this.inputArea.style.opacity = '1';
     if (this.textInput) {
       this.textInput.focus();
@@ -215,6 +244,7 @@ class GameBoyConversation {
 
     // Hide all elements
     if (this.modelSelector) this.modelSelector.style.opacity = '0';
+    if (this.closeButton) this.closeButton.style.opacity = '0';
     if (this.inputArea) this.inputArea.style.opacity = '0';
     if (this.responseArea) this.responseArea.style.opacity = '0';
 

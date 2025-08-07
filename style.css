@@ -108,9 +108,9 @@ html, body {
 #touch-controls button {
   padding: 15px;
   font-size: 24px;
-  border: 3px solid #1a1a1a;
+  border: 2px solid #555;
   border-radius: 12px;
-  background: linear-gradient(145deg, #3a3a3a, #1a1a1a);
+  background: linear-gradient(145deg, #888, #666);
   color: #fff;
   cursor: pointer;
   width: 60px;
@@ -120,25 +120,25 @@ html, body {
   justify-content: center;
   transition: all 0.1s ease;
   box-shadow: 
-    0 4px 8px rgba(0,0,0,0.4),
-    inset 0 1px 3px rgba(255,255,255,0.1);
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    0 2px 4px rgba(0,0,0,0.3),
+    inset 0 1px 2px rgba(255,255,255,0.1);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 #touch-controls button:hover {
-  background: linear-gradient(145deg, #4a4a4a, #2a2a2a);
+  background: linear-gradient(145deg, #999, #777);
   transform: translateY(-2px);
   box-shadow: 
-    0 6px 12px rgba(0,0,0,0.6),
+    0 4px 8px rgba(0,0,0,0.4),
     inset 0 1px 3px rgba(255,255,255,0.2);
 }
 
 #touch-controls button:active {
-  background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+  background: linear-gradient(145deg, #555, #333);
   transform: translateY(1px);
   box-shadow: 
-    0 2px 4px rgba(0,0,0,0.3),
-    inset 0 2px 4px rgba(0,0,0,0.5);
+    0 1px 2px rgba(0,0,0,0.3),
+    inset 0 2px 4px rgba(0,0,0,0.3);
 }
 
 /* Button positioning */
@@ -149,17 +149,7 @@ html, body {
 
 #btn-action {
   grid-area: action;
-  background: linear-gradient(145deg, #ff6b4a, #d63447);
-  border-color: #a02325;
-  color: #fff;
-}
-
-#btn-action:hover {
-  background: linear-gradient(145deg, #ff7b5a, #e63447);
-}
-
-#btn-action:active {
-  background: linear-gradient(145deg, #d63447, #a02325);
+  /* Now uses the same gray styling as other buttons */
 }
 
 /* Debug Panel */
@@ -182,12 +172,15 @@ html, body {
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   #gameboy-container {
-    padding: 10px;
+    padding: 5px;
+    justify-content: flex-start;
+    padding-bottom: 120px; /* Leave space for controls */
   }
   
   #screen-area {
-    max-height: 75vh;
-    padding: 10px;
+    max-height: 60vh; /* Reduced from 75vh for better mobile experience */
+    padding: 8px;
+    margin-bottom: 10px;
   }
   
   #status-bar {
@@ -197,14 +190,20 @@ html, body {
   }
   
   #controls-area {
-    margin-top: 10px;
-    padding: 10px;
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 0;
+    padding: 8px;
+    background: rgba(42, 42, 42, 0.95);
+    border-radius: 15px;
   }
   
   #touch-controls button {
     width: 50px;
     height: 50px;
-    font-size: 20px;
+    font-size: 22px;
     padding: 12px;
   }
 }
@@ -247,6 +246,6 @@ html, body {
   #touch-controls button {
     width: 40px;
     height: 40px;
-    font-size: 16px;
+    font-size: 18px;
   }
 }

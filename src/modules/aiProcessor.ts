@@ -510,11 +510,15 @@ export async function switchModel(modelKey: string): Promise<boolean> {
 
 export async function answerQuestion(question: string): Promise<string> {
   try {
-    if (!isAIReady()) {
-      // Try to initialize if not ready
-      const initialized = await initializeAI();
+    // Enhanced mobile error handling
+    if (!aiPipeline || !isModelLoaded) {
+      console.log("🔄 AI pipeline not ready, attempting to initialize...");
+      const initialized = await initializeAI().catch(err => {
+        console.error("❌ Failed to initialize AI:", err);
+        return false;
+      });
       if (!initialized) {
-        return "I'm sorry, the AI system is currently unavailable. Please try again later.";
+        return "I'm sorry, the AI system is currently unavailable on this device. Please try again or switch to desktop.";
       }
     }
 
@@ -604,8 +608,13 @@ Assistant: `;
         score: 1.0, // Chat models don't provide confidence scores
       };
     } else {
-      // Use Q&A pipeline for DistilBERT
-      result = await aiPipeline(question, relevantContext);
+      // Use Q&A pipeline for DistilBERT with mobile error handling
+      try {
+        result = await aiPipeline(question, relevantContext);
+      } catch (pipelineError) {
+        console.error("❌ Pipeline execution failed:", pipelineError);
+        return "I encountered an error processing your question. This might be due to device limitations. Please try a simpler question or use desktop.";
+      }
     }
 
     console.log("🤖 AI Model Result:", {
