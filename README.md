@@ -1,40 +1,181 @@
-# MyImmersiveExperience
+# 🎮 Interactive CV Platform
 
-MyImmersiveExperience/
-├── index.html <-- HTML di ingresso (resta nella root)
-├── style.css <-- (opzionale) se non vuoi modularizzare anche lo stile
-├── src/ <-- 📦 tutto il codice sorgente TypeScript
-│ ├── main.ts <-- Entry point
-│ ├── modules/ <-- Moduli TS
-│ │ ├── assets.ts
-│ │ ├── canvas.ts
-│ │ ├── input.ts
-│ │ ├── map.ts
-│ │ ├── player.ts
-│ │ └── sprites.ts
-├── assets/ <-- Immagini o file statici usati nel gioco
-│ ├── Grass_Middle.png
-│ ├── Path_Middle.png
-│ ├── Oak_Tree.png
-│ └── Player.png
-├── deploy.sh
-├── vite.config.ts
-├── package.json
-└── README.md
+An immersive GameBoy-style interactive portfolio featuring advanced AI-powered conversations, multi-room navigation, and intelligent model selection.
 
-https://www.piskelapp.com/p/create/sprite/
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Browser Support](https://img.shields.io/badge/Browser-Chrome%20%7C%20Firefox%20%7C%20Safari%20%7C%20Edge-brightgreen)](docs/user-guide/BROWSER_COMPATIBILITY.md)
+[![AI Models](https://img.shields.io/badge/AI-DistilBERT%20%7C%20Qwen%20%7C%20Phi--3-blue)](docs/ai-system/AI_MODELS_COMPARISON.md)
 
-https://itch.io/game-assets/free/tag-characters/tag-pixel-art/tag-sprites
+## 🚀 **What is this?**
 
-⸻
+An interactive portfolio website that combines:
+- **Retro GameBoy-style interface** with pixel-perfect design
+- **Multi-room navigation system** with smooth transitions
+- **Advanced AI conversation system** with 3 different models
+- **Intelligent network detection** and user consent management
+- **Real-time progress tracking** with background model preloading
+- **Cross-browser compatibility** with mobile-first responsive design
 
-🕹️ GameDev-JS — Setup con Vite + GitHub Pages
+## ✨ **Key Features**
 
-Questo progetto è un semplice gioco sviluppato in JavaScript modulare. Per semplificare lo sviluppo e ottimizzare la distribuzione, è stato integrato Vite come tool di sviluppo moderno.
+### 🤖 **Advanced AI System**
+- **3 AI Models**: DistilBERT Q&A (65MB), Qwen Chat (500MB), Phi-3 Advanced (1.8GB)
+- **Smart Model Selection**: Device capability detection automatically recommends best model
+- **Network Speed Detection**: Analyzes connection speed and provides download recommendations
+- **Real-time Progress Tracking**: Live download progress with speed and time estimates
+- **Background Preloading**: Models load in background during gameplay
 
-⸻
+### 🎯 **User Experience**
+- **One-Time Consent**: Intelligent consent system that only asks once
+- **Progressive Enhancement**: Graceful degradation from advanced to basic models
+- **Mobile-First Design**: Touch controls for mobile, keyboard shortcuts for desktop
+- **Accessibility**: WCAG 2.1 compliant with screen reader support
 
-🚀 Setup e sviluppo locale 1. Inizializza il progetto:
+### 🏗️ **Technical Architecture**
+- **Modern TypeScript**: Fully typed codebase with strict mode
+- **Modular Design**: Clean separation of concerns across modules
+- **WebGPU/WASM Support**: Hardware acceleration with CPU fallback
+- **Client-Side Only**: No server required, deployable to any static host
+
+## 🎮 **How it Works**
+
+1. **GameBoy Interface**: Navigate through different rooms using arrow keys or touch controls
+2. **Boss Room**: Interact with the main character to start AI conversations
+3. **Model Selection**: Choose from 3 AI models based on your device capabilities
+4. **Smart Recommendations**: System analyzes your network and suggests optimal model
+5. **Real-time Chat**: Ask questions about the CV with instant AI responses
+
+## 📱 **Browser Support**
+
+| Browser | Desktop | Mobile | WebGPU | Notes |
+|---------|---------|--------|---------|-------|
+| Chrome  | ✅ Full | ✅ Full | ✅ Yes | Best performance |
+| Edge    | ✅ Full | ✅ Full | ✅ Yes | Recommended |
+| Firefox | ✅ Good | ✅ Good | ⚠️ Limited | WASM fallback |
+| Safari  | ⚠️ Basic | ⚠️ Basic | ❌ No | iOS fallback system |
+
+## 🚀 **Quick Start**
+
+### **Option 1: Try Online**
+Visit the live demo: [Your GitHub Pages URL]
+
+### **Option 2: Run Locally**
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/MyImmersiveExperience.git
+cd MyImmersiveExperience
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Open http://localhost:3000
+```
+
+### **Option 3: Deploy Static**
+```bash
+# Build for production
+npm run build
+
+# Deploy dist/ folder to any static host
+# (GitHub Pages, Netlify, Vercel, etc.)
+```
+
+## 📚 **Documentation**
+
+### **For Developers**
+- 🏗️ [System Overview](docs/architecture/SYSTEM_OVERVIEW.md) - High-level architecture
+- 📁 [Code Organization](docs/development/CODE_ORGANIZATION.md) - File structure and patterns
+- 🔧 [Setup Guide](docs/development/SETUP.md) - Development environment setup
+- 📖 [API Reference](docs/development/API_REFERENCE.md) - Functions and interfaces
+
+### **For Designers**
+- 🎨 [Design System](docs/design/DESIGN_SYSTEM.md) - GameBoy-style design patterns
+- 📱 [Responsive Patterns](docs/design/RESPONSIVE_PATTERNS.md) - Mobile/desktop adaptations
+- 🧩 [Component Library](docs/design/COMPONENT_LIBRARY.md) - Reusable UI components
+
+### **For Users**
+- 🎮 [User Guide](docs/user-guide/USER_GUIDE.md) - How to use the platform
+- 🌐 [Browser Compatibility](docs/user-guide/BROWSER_COMPATIBILITY.md) - Supported browsers
+- 🐛 [Troubleshooting](docs/user-guide/TROUBLESHOOTING.md) - Common issues and fixes
+
+### **AI System Deep Dive**
+- 🤖 [Model Comparison](docs/ai-system/AI_MODELS_COMPARISON.md) - DistilBERT vs Qwen vs Phi-3
+- 📶 [Network Detection](docs/ai-system/NETWORK_DETECTION.md) - Speed analysis system
+- ✅ [User Consent Flow](docs/ai-system/USER_CONSENT_FLOW.md) - Download approval process
+- 📊 [Progress Tracking](docs/ai-system/PROGRESS_TRACKING.md) - Real-time download monitoring
+
+## 🏗️ **Architecture Overview**
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Game Engine   │────│   Room Manager   │────│   AI Processor  │
+│                 │    │                  │    │                 │
+│ • Canvas        │    │ • Navigation     │    │ • 3 AI Models   │
+│ • Input         │    │ • State Mgmt     │    │ • Progress      │
+│ • Rendering     │    │ • Transitions    │    │ • Network Test  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌──────────────────┐
+                    │ Conversation UI  │
+                    │                  │
+                    │ • GameBoy Style  │
+                    │ • Model Selector │
+                    │ • Progress Bars  │
+                    │ • Consent Dialog │
+                    └──────────────────┘
+```
+
+## 🤝 **Contributing**
+
+We welcome contributions! Please see our [Contributing Guide](docs/development/CONTRIBUTING.md) for:
+- Code style guidelines
+- Development workflow
+- Testing requirements
+- Pull request process
+
+## 🎯 **Roadmap**
+
+### **Completed ✅**
+- [x] GameBoy-style interface with multi-room navigation
+- [x] 3-model AI system (DistilBERT, Qwen, Phi-3)
+- [x] Network speed detection and intelligent recommendations
+- [x] Real-time progress tracking with background loading
+- [x] Cross-browser compatibility with mobile support
+- [x] User consent system with one-time approval
+
+### **Planned 🚧**
+- [ ] Additional AI models (LLaMA, Claude)
+- [ ] Voice interaction support
+- [ ] Multiplayer rooms
+- [ ] Achievement system
+- [ ] Theme customization
+- [ ] PWA offline support
+
+## 📄 **License**
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 **Acknowledgments**
+
+- **Transformers.js** - For making browser-based AI possible
+- **Microsoft Phi-3** - For providing state-of-the-art language models
+- **Hugging Face** - For model hosting and excellent documentation
+- **GameBoy Design** - Inspired by Nintendo's iconic handheld console
+
+---
+
+**Built with ❤️ using TypeScript, HTML5 Canvas, and cutting-edge browser AI**
+
+*For technical support, feature requests, or contributions, please open an issue on GitHub.*
+
+---
+
+## 🔄 **Development History & Legacy Documentation**
 
 npm init -y
 

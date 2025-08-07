@@ -1,6 +1,7 @@
 // modules/gameboyConversation.ts - GameBoy/Pokémon-style conversation system
 
-import { answerQuestion, switchModel, getCurrentModelKey } from "./aiProcessor";
+import { answerQuestion, switchModel, getCurrentModelKey, canRunModel, getModelCapabilityInfo, getModelDownloadState, isUserRequestedDownload, hasUserRequestedModel } from "./aiProcessor";
+import { hasUserApprovedDownload } from "./modelConsent";
 
 interface ConversationState {
   isActive: boolean;
@@ -80,10 +81,8 @@ class GameBoyConversation {
       opacity: 0;
       transition: opacity 0.3s ease;
     `;
-    this.modelSelector.innerHTML = `
-      <option value="distilbert">❓ DistilBERT Q&A</option>
-      <option value="qwen">💬 Qwen2.5 Chat</option>
-    `;
+    // Dynamically populate model selector with capability info
+    this.updateModelSelector();
 
     // Create close button for mobile
     this.closeButton = document.createElement('button');
@@ -331,23 +330,74 @@ class GameBoyConversation {
     // ESC key will be used to exit conversation instead
   }
 
+  private updateModelSelector(): void {
+    if (!this.modelSelector) return;
+
+    const models = [
+      { key: 'distilbert', icon: '❓', name: 'DistilBERT Q&A', size: '65MB' },
+      { key: 'qwen', icon: '💬', name: 'Qwen Chat', size: '500MB' },
+      { key: 'phi3', icon: '🧠', name: 'Phi-3 Advanced', size: '1.8GB', badge: 'NEW!' }
+    ];
+
+    this.modelSelector.innerHTML = models.map(model => {
+      const capability = canRunModel(model.key);
+      const disabled = !capability.canRun;
+      const badge = model.badge ? ` ⭐${model.badge}` : '';
+      const warning = disabled && capability.reason ? ` (${capability.reason})` : '';
+      
+      return `<option value="${model.key}" ${disabled ? 'disabled' : ''}>
+        ${model.icon} ${model.name} (${model.size})${badge}${warning}
+      </option>`;
+    }).join('');
+  }
+
   private async handleModelChange(): Promise<void> {
     if (!this.modelSelector) return;
 
     const selectedModel = this.modelSelector.value;
     console.log(`🔄 Switching to ${selectedModel} model...`);
     
+    const modelNames: { [key: string]: string } = {
+      'distilbert': 'DistilBERT Q&A',
+      'qwen': 'Qwen Chat', 
+      'phi3': 'Phi-3 Advanced'
+    };
+
+    // Check if this is Phi-3 and user has ALREADY EXPLICITLY REQUESTED it
+    if (selectedModel === 'phi3') {
+      const downloadState = getModelDownloadState('phi3');
+      const userApproved = hasUserApprovedDownload('phi3');
+      const userRequestedDownload = isUserRequestedDownload('phi3');
+      
+      console.log(`🔍 Phi-3 switch check:`, {
+        userApproved,
+        userRequestedDownload,
+        downloadStatus: downloadState.status,
+        progress: downloadState.progress
+      });
+      
+      // ONLY show progress if user explicitly requested AND approved this download
+      if (userApproved && userRequestedDownload && downloadState.status === 'downloading') {
+        console.log(`📊 User requested and approved - showing progress for active download`);
+        this.showDownloadProgress(selectedModel, modelNames[selectedModel]);
+        return;
+      }
+      
+      // In all other cases (first time, background only, etc.), let switchModel handle the consent dialog
+      console.log(`🚀 First time or background only - will show consent dialog`);
+    }
+    
     // Show loading state during model switch
     if (this.responseArea) {
       this.responseArea.style.opacity = '1';
-      this.responseArea.textContent = `Switching to ${selectedModel === 'qwen' ? 'Qwen Chat' : 'DistilBERT Q&A'}...`;
+      this.responseArea.textContent = `Switching to ${modelNames[selectedModel] || selectedModel}...`;
     }
 
     try {
       const success = await switchModel(selectedModel);
       if (success) {
         if (this.responseArea) {
-          this.responseArea.textContent = `✅ Switched to ${selectedModel === 'qwen' ? 'Qwen Chat' : 'DistilBERT Q&A'}!`;
+          this.responseArea.textContent = `✅ Switched to ${modelNames[selectedModel] || selectedModel}!`;
         }
         setTimeout(() => {
           if (this.responseArea) this.responseArea.style.opacity = '0';
@@ -366,6 +416,105 @@ class GameBoyConversation {
         this.responseArea.textContent = '❌ Error switching models. Try again later.';
       }
     }
+  }
+
+  private showDownloadProgress(modelKey: string, modelName: string): void {
+    if (!this.responseArea) return;
+    
+    console.log(`📊 Showing download progress UI for ${modelKey}`);
+    this.responseArea.style.opacity = '1';
+    
+    // Create progress display in conversation area
+    this.responseArea.innerHTML = `
+      <div style="text-align: center; padding: 15px;">
+        <div style="margin-bottom: 10px;">
+          <strong>🧠 ${modelName} is downloading...</strong>
+        </div>
+        
+        <div style="background: #f0f0f0; border-radius: 10px; height: 8px; margin: 10px 0; overflow: hidden;">
+          <div id="conv-progress-bar" style="background: linear-gradient(90deg, #007bff, #0056b3); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-bottom: 10px;">
+          <span id="conv-progress-percent">0%</span>
+          <span id="conv-download-speed">Calculating...</span>
+          <span id="conv-time-remaining">Estimating...</span>
+        </div>
+        
+        <div style="font-size: 10px; color: #888;">
+          💡 You can continue chatting with other models while this downloads
+        </div>
+      </div>
+    `;
+
+    // Start real-time progress updates
+    const updateInterval = setInterval(() => {
+      const downloadState = getModelDownloadState(modelKey);
+      
+      const progressBar = this.responseArea?.querySelector('#conv-progress-bar') as HTMLDivElement;
+      const progressPercent = this.responseArea?.querySelector('#conv-progress-percent') as HTMLSpanElement;
+      const downloadSpeed = this.responseArea?.querySelector('#conv-download-speed') as HTMLSpanElement;
+      const timeRemaining = this.responseArea?.querySelector('#conv-time-remaining') as HTMLSpanElement;
+
+      if (!progressBar || !this.responseArea) {
+        console.log(`❌ Progress elements not found, clearing interval for ${modelKey}`);
+        clearInterval(updateInterval);
+        return;
+      }
+      
+      console.log(`📊 Updating progress UI:`, {
+        modelKey,
+        status: downloadState.status,
+        progress: downloadState.progress,
+        speed: downloadState.speed
+      });
+
+      const percent = Math.round(downloadState.progress * 100);
+      progressBar.style.width = `${percent}%`;
+      progressPercent.textContent = `${percent}%`;
+      
+      if (downloadState.speed > 0) {
+        downloadSpeed.textContent = `${downloadState.speed.toFixed(1)} MB/s`;
+      } else {
+        downloadSpeed.textContent = 'Calculating...';
+      }
+      
+      if (downloadState.timeRemaining > 60) {
+        timeRemaining.textContent = `${Math.round(downloadState.timeRemaining / 60)}m left`;
+      } else if (downloadState.timeRemaining > 0) {
+        timeRemaining.textContent = `${Math.round(downloadState.timeRemaining)}s left`;
+      } else {
+        timeRemaining.textContent = 'Estimating...';
+      }
+
+      // Check if download completed
+      if (downloadState.status === 'completed') {
+        clearInterval(updateInterval);
+        if (this.responseArea) {
+          this.responseArea.innerHTML = `
+            <div style="text-align: center; padding: 15px; color: #28a745;">
+              ✅ <strong>${modelName} ready!</strong><br>
+              <span style="font-size: 11px;">Switching to advanced AI model...</span>
+            </div>
+          `;
+        }
+        
+        // Auto-switch to the completed model
+        setTimeout(async () => {
+          try {
+            await switchModel(modelKey);
+            if (this.responseArea) {
+              this.responseArea.style.opacity = '0';
+            }
+            if (this.inputArea) {
+              this.inputArea.style.opacity = '1';
+            }
+          } catch (error) {
+            console.error('Failed to switch to completed model:', error);
+          }
+        }, 2000);
+      }
+    }, 1000); // Update every second
   }
 }
 

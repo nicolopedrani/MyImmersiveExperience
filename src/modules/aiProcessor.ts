@@ -1,5 +1,13 @@
 // modules/aiProcessor.ts - AI processing with Transformers.js v3 CDN integration
 
+import { requestModelConsent, hasUserConsentFor } from "./modelConsent";
+
+declare global {
+  interface Window {
+    aiModels?: { [key: string]: any };
+  }
+}
+
 interface CVContext {
   personalInfo: string;
   workExperience: string;
@@ -24,6 +32,103 @@ function isMobileDevice(): boolean {
 
 function isIOSDevice(): boolean {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+// Enhanced device capability detection for Phi-3 requirements
+function getDeviceMemoryGB(): number {
+  // Use Device Memory API if available, otherwise estimate
+  if ('deviceMemory' in navigator) {
+    return (navigator as any).deviceMemory;
+  }
+  
+  // Fallback estimation based on user agent and other factors
+  if (isMobileDevice()) {
+    return 2; // Conservative mobile estimate
+  }
+  
+  // Desktop estimation - default to 4GB if unknown
+  return 4;
+}
+
+function hasWebGPUSupport(): boolean {
+  return 'gpu' in navigator;
+}
+
+function canRunModel(modelKey: string): { canRun: boolean; reason?: string; suggestion?: string } {
+  const model = AI_MODELS[modelKey];
+  if (!model) {
+    return { canRun: false, reason: "Model not found" };
+  }
+
+  // iOS devices always use fallback
+  if (isIOSDevice()) {
+    return { 
+      canRun: false, 
+      reason: "iOS Safari compatibility", 
+      suggestion: "Using smart fallback responses instead" 
+    };
+  }
+
+  // Check memory requirements
+  const availableMemory = getDeviceMemoryGB();
+  if (availableMemory < model.minMemoryGB) {
+    return { 
+      canRun: false, 
+      reason: `Requires ${model.minMemoryGB}GB RAM, detected ${availableMemory}GB`,
+      suggestion: `Try ${model.minMemoryGB <= 2 ? 'DistilBERT' : 'Qwen'} for better performance`
+    };
+  }
+
+  // Check WebGPU for models that strongly benefit from it
+  if (model.recommendedWebGPU && !hasWebGPUSupport()) {
+    // Phi-3 can still run on WASM but will be slower
+    if (modelKey === 'phi3') {
+      return { 
+        canRun: true, 
+        reason: "Will use CPU processing (slower performance)",
+        suggestion: "Use Chrome/Edge for faster WebGPU acceleration"
+      };
+    }
+  }
+
+  return { canRun: true };
+}
+
+function getBestModelForDevice(): string {
+  // Try models in order of preference/capability
+  const modelPriority = ['phi3', 'qwen', 'distilbert'];
+  
+  for (const modelKey of modelPriority) {
+    const capability = canRunModel(modelKey);
+    if (capability.canRun) {
+      return modelKey;
+    }
+  }
+  
+  // Fallback to smallest model
+  return 'distilbert';
+}
+
+function getModelCapabilityInfo(modelKey: string): string {
+  const model = AI_MODELS[modelKey];
+  const capability = canRunModel(modelKey);
+  
+  if (!model) return "Model information not available";
+  
+  const parts = [
+    `📊 ${model.size}`,
+    `🧠 ${model.minMemoryGB}GB RAM required`
+  ];
+  
+  if (model.recommendedWebGPU) {
+    parts.push(`⚡ WebGPU recommended`);
+  }
+  
+  if (!capability.canRun && capability.reason) {
+    parts.push(`⚠️ ${capability.reason}`);
+  }
+  
+  return parts.join(' • ');
 }
 
 // iOS-specific fallback responses due to Safari compatibility issues
@@ -75,8 +180,23 @@ let progressUpdateCallback:
 let preloadedModels: { [key: string]: any } = {};
 let backgroundLoadingStatus: { [key: string]: 'pending' | 'loading' | 'completed' | 'error' } = {
   distilbert: 'pending',
-  qwen: 'pending'
+  qwen: 'pending',
+  phi3: 'pending'
 };
+
+// Download state tracking for UI
+let modelDownloadState: { [key: string]: {
+  status: 'not_started' | 'downloading' | 'completed' | 'failed';
+  progress: number;
+  speed: number;
+  bytesDownloaded: number;
+  totalBytes: number;
+  timeRemaining: number;
+  userRequested: boolean; // NEW: Track if user explicitly requested this model
+}} = {};
+
+// Track which models user has explicitly requested (separate from background loading)
+let userRequestedModels: Set<string> = new Set();
 let backgroundProgressCallback: ((modelKey: string, status: string, progress?: number) => void) | null = null;
 
 // Available AI models - both Q&A and chat models
@@ -86,12 +206,28 @@ const AI_MODELS: { [key: string]: any } = {
     description: "DistilBERT model optimized for question-answering",
     size: "~65MB",
     type: "qa",
+    minMemoryGB: 1,
+    recommendedWebGPU: false,
   },
   qwen: {
     name: "onnx-community/Qwen2.5-0.5B-Instruct",
     description: "Qwen 2.5 0.5B Instruct - Small conversational language model",
     size: "~500MB",
     type: "chat",
+    minMemoryGB: 2,
+    recommendedWebGPU: false,
+  },
+  phi3: {
+    name: "Xenova/Phi-3-mini-4k-instruct",
+    description: "Phi-3 Mini - Advanced 3.8B parameter instruction model",
+    size: "~1.8GB",
+    type: "chat",
+    minMemoryGB: 4,
+    recommendedWebGPU: true,
+    workingExamples: [
+      "https://huggingface.co/spaces/webml-community/phi-3.5-webgpu",
+      "https://github.com/huggingface/transformers.js-examples/tree/main/phi-3.5-webgpu"
+    ]
   },
 };
 
@@ -208,14 +344,36 @@ async function loadModelInBackground(modelKey: string): Promise<boolean> {
     // Choose pipeline type based on model type
     const pipelineType = model.type === "chat" ? "text-generation" : "question-answering";
 
-    // Configure options for background loading (simplified progress tracking)
+    // Configure options for background loading with Phi-3 specific settings
     const pipelineOptions: any = {
-      device: "webgpu",
+      device: hasWebGPUSupport() && model.recommendedWebGPU ? "webgpu" : "wasm",
+      // Phi-3 specific configuration
+      ...(modelKey === 'phi3' && {
+        dtype: "q4",
+        use_external_data_format: true,
+      }),
       progress_callback: (progress: any) => {
         if (progress.status === "downloading") {
           // Since content-length isn't available, we'll use a chunk-based progress estimate
           const chunkProgress = Math.min(progress.loaded ? Math.floor(progress.loaded / (1024 * 1024)) : 0, 90);
           console.log(`📥 Background downloading ${modelKey}: ~${chunkProgress}MB loaded...`);
+          
+          // Only update download state if this is a user-requested download
+          if (hasUserRequestedModel(modelKey)) {
+            updateDownloadState(modelKey, progress);
+          }
+          
+          // Send real progress data to UI if progress dialog is open
+          if ((window as any).updateModelProgress) {
+            const loaded = progress.loaded || 0;
+            const total = progress.total || (1.8 * 1024 * 1024 * 1024); // 1.8GB estimate if not available
+            
+            (window as any).updateModelProgress({
+              progress: progress.progress || (loaded / total),
+              bytesDownloaded: loaded,
+              totalBytes: total
+            });
+          }
           
           if (backgroundProgressCallback) {
             backgroundProgressCallback(modelKey, 'downloading', chunkProgress);
@@ -245,6 +403,12 @@ async function loadModelInBackground(modelKey: string): Promise<boolean> {
       modelInfo: model,
       loadTime: Date.now()
     };
+
+    // Store in global window object to prevent double consent
+    if (typeof window !== 'undefined') {
+      window.aiModels = window.aiModels || {};
+      window.aiModels[modelKey] = true;
+    }
 
     backgroundLoadingStatus[modelKey] = 'completed';
     console.log(`✅ Background loading of ${modelKey} completed!`);
@@ -276,6 +440,10 @@ async function loadModel(modelKey: string): Promise<boolean> {
   try {
     console.log(`🤖 Loading ${modelKey} model: ${model.name}`);
     console.log(`📦 Model info: ${model.description} (${model.size})`);
+    
+    // Initialize download state immediately when starting to load (user-requested)
+    initializeDownloadState(modelKey, true);
+    markModelAsUserRequested(modelKey);
 
     // Choose pipeline type based on model type
     const pipelineType =
@@ -290,6 +458,20 @@ async function loadModel(modelKey: string): Promise<boolean> {
           const loaded = progress.loaded || 0;
           const total = progress.total || 0;
           const remaining = total - loaded;
+          
+          // Only update download state if this is a user-requested download
+          if (hasUserRequestedModel(modelKey)) {
+            updateDownloadState(modelKey, progress);
+          }
+          
+          // Send real progress data to UI if progress dialog is open
+          if ((window as any).updateModelProgress) {
+            (window as any).updateModelProgress({
+              progress: progress.progress || 0,
+              bytesDownloaded: loaded,
+              totalBytes: total
+            });
+          }
 
           // Calculate download speed if available
           let speedInfo = "";
@@ -525,6 +707,29 @@ export async function switchModel(modelKey: string): Promise<boolean> {
       ).join(", ")}`
     );
     return false;
+  }
+
+  // Check device compatibility
+  const capability = canRunModel(modelKey);
+  if (!capability.canRun) {
+    console.warn(`⚠️ Cannot run ${modelKey}: ${capability.reason}`);
+    return false;
+  }
+
+  // Check user consent for large models
+  if (modelKey === 'phi3' && !hasUserConsentFor(modelKey)) {
+    console.log(`🤔 Requesting user consent for ${modelKey} model...`);
+    try {
+      const consent = await requestModelConsent(modelKey, AI_MODELS[modelKey]);
+      if (!consent.approved) {
+        console.log(`❌ User declined ${modelKey} model download`);
+        return false;
+      }
+      console.log(`✅ User approved ${modelKey} model download`);
+    } catch (error) {
+      console.error(`❌ Error requesting consent for ${modelKey}:`, error);
+      return false;
+    }
   }
 
   console.log(`🔄 Switching to ${modelKey} model...`);
@@ -1085,8 +1290,102 @@ export function setBackgroundProgressCallback(callback: (modelKey: string, statu
   backgroundProgressCallback = callback;
 }
 
+// Export device capability functions for UI
+export { canRunModel, getModelCapabilityInfo, getBestModelForDevice };
+
 export function getModelLoadingStatus(): { [key: string]: string } {
   return { ...backgroundLoadingStatus };
+}
+
+export function getModelDownloadState(modelKey: string) {
+  return modelDownloadState[modelKey] || {
+    status: 'not_started',
+    progress: 0,
+    speed: 0,
+    bytesDownloaded: 0,
+    totalBytes: 0,
+    timeRemaining: 0,
+    userRequested: false
+  };
+}
+
+export function isModelDownloading(modelKey: string): boolean {
+  return modelDownloadState[modelKey]?.status === 'downloading';
+}
+
+export function hasUserRequestedModel(modelKey: string): boolean {
+  return userRequestedModels.has(modelKey);
+}
+
+export function markModelAsUserRequested(modelKey: string): void {
+  console.log(`👤 User explicitly requested ${modelKey}`);
+  userRequestedModels.add(modelKey);
+}
+
+export function isUserRequestedDownload(modelKey: string): boolean {
+  return modelDownloadState[modelKey]?.userRequested === true;
+}
+
+function updateDownloadState(modelKey: string, progress: any) {
+  const loaded = progress.loaded || 0;
+  const total = progress.total || (1.8 * 1024 * 1024 * 1024); // 1.8GB estimate
+  const progressPercent = progress.progress || (loaded / total);
+  
+  // Calculate speed if we have previous state
+  const currentTime = Date.now();
+  const prevState = modelDownloadState[modelKey];
+  let speed = 0;
+  let timeRemaining = 0;
+  
+  if (prevState && prevState.bytesDownloaded > 0) {
+    const timeDiff = currentTime - (prevState as any).lastUpdate;
+    const bytesDiff = loaded - prevState.bytesDownloaded;
+    if (timeDiff > 0) {
+      speed = (bytesDiff * 1000) / timeDiff; // bytes per second
+      const remainingBytes = total - loaded;
+      timeRemaining = speed > 0 ? remainingBytes / speed : 0;
+    }
+  }
+  
+  const isCompleted = progressPercent >= 0.99;
+  
+  // Preserve userRequested flag when updating
+  const wasUserRequested = modelDownloadState[modelKey]?.userRequested || false;
+  
+  modelDownloadState[modelKey] = {
+    status: isCompleted ? 'completed' : 'downloading',
+    progress: progressPercent,
+    speed: speed / (1024 * 1024), // MB/s
+    bytesDownloaded: loaded,
+    totalBytes: total,
+    timeRemaining: timeRemaining,
+    userRequested: wasUserRequested,
+    lastUpdate: currentTime
+  } as any;
+  
+  // Mark as completed in global tracking when download finishes
+  if (isCompleted) {
+    console.log(`✅ ${modelKey} download completed!`);
+    if (typeof window !== 'undefined') {
+      window.aiModels = window.aiModels || {};
+      window.aiModels[modelKey] = true;
+    }
+    backgroundLoadingStatus[modelKey] = 'completed';
+  }
+}
+
+export function initializeDownloadState(modelKey: string, userRequested: boolean = false): void {
+  console.log(`🚀 Initializing download state for ${modelKey} (user requested: ${userRequested})`);
+  modelDownloadState[modelKey] = {
+    status: 'downloading',
+    progress: 0,
+    speed: 0,
+    bytesDownloaded: 0,
+    totalBytes: 1.8 * 1024 * 1024 * 1024, // 1.8GB estimate
+    timeRemaining: 0,
+    userRequested: userRequested,
+    lastUpdate: Date.now()
+  } as any;
 }
 
 export async function startBackgroundLoading(): Promise<void> {
@@ -1108,25 +1407,67 @@ export async function startBackgroundLoading(): Promise<void> {
     }
   }
 
-  console.log("🚀 Starting background model preloading...");
+  console.log("🚀 Starting intelligent background model preloading...");
   
-  // Start loading DistilBERT first (smaller, faster to load)
-  loadModelInBackground('distilbert')
-    .then((success) => {
-      if (success) {
-        console.log("🎯 DistilBERT preloaded successfully! Starting Qwen preloading...");
-        
-        // Start loading Qwen after DistilBERT finishes
-        loadModelInBackground('qwen')
-          .then((qwenSuccess) => {
-            if (qwenSuccess) {
-              console.log("🎉 All models preloaded successfully!");
-            } else {
-              console.log("⚠️ Qwen preloading failed, but DistilBERT is ready");
-            }
-          });
-      } else {
-        console.log("⚠️ DistilBERT preloading failed, skipping Qwen");
-      }
-    });
+  // Determine optimal loading strategy based on device capabilities
+  const bestModel = getBestModelForDevice();
+  console.log(`🎯 Device analysis: Best model is ${bestModel}`);
+  
+  // Always start with the best model for this device
+  const loadingPromises: Promise<boolean>[] = [];
+  
+  if (bestModel === 'phi3') {
+    // High-end device: Load Phi-3 first, then fallbacks
+    console.log("🧠 High-end device detected: Loading Phi-3 first");
+    loadingPromises.push(
+      loadModelInBackground('phi3').then(success => {
+        console.log(success ? "✅ Phi-3 preloaded!" : "❌ Phi-3 failed, will fallback");
+        return success;
+      })
+    );
+    
+    // Also preload Qwen as backup (smaller, more reliable)
+    setTimeout(() => {
+      loadingPromises.push(
+        loadModelInBackground('qwen').then(success => {
+          console.log(success ? "✅ Qwen backup preloaded!" : "⚠️ Qwen backup failed");
+          return success;
+        })
+      );
+    }, 5000); // Start Qwen 5 seconds after Phi-3
+    
+  } else if (bestModel === 'qwen') {
+    // Mid-range device: Load Qwen first, then DistilBERT
+    console.log("💬 Mid-range device detected: Loading Qwen first");
+    loadingPromises.push(
+      loadModelInBackground('qwen').then(success => {
+        console.log(success ? "✅ Qwen preloaded!" : "❌ Qwen failed, will fallback");
+        return success;
+      })
+    );
+    
+    // Preload DistilBERT as backup
+    setTimeout(() => {
+      loadingPromises.push(
+        loadModelInBackground('distilbert').then(success => {
+          console.log(success ? "✅ DistilBERT backup preloaded!" : "⚠️ DistilBERT backup failed");
+          return success;
+        })
+      );
+    }, 3000); // Start DistilBERT 3 seconds after Qwen
+    
+  } else {
+    // Low-end device or iOS: Load DistilBERT only
+    console.log("❓ Low-end/mobile device detected: Loading DistilBERT only");
+    loadingPromises.push(
+      loadModelInBackground('distilbert').then(success => {
+        console.log(success ? "✅ DistilBERT preloaded!" : "❌ DistilBERT failed");
+        return success;
+      })
+    );
+  }
+  
+  // Don't auto-switch to Phi-3 during background loading 
+  // Let user manually choose when they want to use it
+  console.log(`💡 Background loading started. User can manually switch to ${bestModel} when ready.`);
 }
