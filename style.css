@@ -41,6 +41,21 @@ html, body {
   flex-grow: 1;
   max-height: 70vh;
   position: relative; /* For absolute positioned message area */
+  transition: all 0.3s ease;
+}
+
+/* Expanded screen area when controls are hidden (desktop) */
+@media (min-width: 769px) {
+  #screen-area {
+    max-width: 95vw;
+    max-height: 85vh;
+  }
+  
+  /* When controls are visible, use smaller size */
+  .controls-visible #screen-area {
+    max-width: 800px;
+    max-height: 70vh;
+  }
 }
 
 /* Game Canvas */
@@ -82,6 +97,58 @@ html, body {
   /* Styles are set dynamically in JavaScript */
 }
 
+/* Initial Instruction Message for Desktop */
+#initial-instructions {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 20px 30px;
+  border-radius: 12px;
+  border: 2px solid #fff;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  backdrop-filter: blur(10px);
+  display: none;
+}
+
+#initial-instructions.show {
+  opacity: 1;
+}
+
+#initial-instructions h3 {
+  margin: 0 0 15px 0;
+  color: #FFD700;
+  font-size: 20px;
+}
+
+#initial-instructions p {
+  margin: 8px 0;
+  line-height: 1.4;
+}
+
+#initial-instructions .dismiss-hint {
+  margin-top: 15px;
+  font-size: 12px;
+  color: #ccc;
+  font-style: italic;
+}
+
+/* Show initial instructions only on desktop */
+@media (min-width: 769px) and (pointer: fine) {
+  #initial-instructions {
+    display: block;
+  }
+}
+
 /* Controls Area */
 #controls-area {
   width: 100%;
@@ -90,8 +157,21 @@ html, body {
   padding: 15px;
   background: #2a2a2a; /* Same as bezel */
   border-radius: 15px;
-  display: flex;
+  /* Hide by default on desktop */
+  display: none;
   justify-content: center;
+}
+
+/* Show controls only on mobile or when explicitly enabled */
+@media (max-width: 768px), (pointer: coarse) {
+  #controls-area {
+    display: flex;
+  }
+}
+
+/* When controls are visible (class added by toggle) */
+#controls-area.controls-visible {
+  display: flex !important;
 }
 
 /* Touch Controls - GameBoy D-Pad Style */
@@ -152,11 +232,51 @@ html, body {
   /* Now uses the same gray styling as other buttons */
 }
 
+/* Controls Toggle Button */
+#controls-toggle {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  background: rgba(42, 42, 42, 0.95);
+  color: #fff;
+  border: 2px solid #555;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1500;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+  display: none; /* Hidden by default */
+}
+
+#controls-toggle:hover {
+  background: rgba(60, 60, 60, 0.95);
+  border-color: #777;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+#controls-toggle:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Show toggle button only on desktop */
+@media (min-width: 769px) and (pointer: fine) {
+  #controls-toggle {
+    display: block;
+  }
+}
+
 /* Debug Panel */
 #debug-panel {
   position: fixed !important;
   top: 15px;
-  left: 15px;
+  left: 150px; /* Moved right to avoid toggle button */
   background: rgba(0, 0, 0, 0.9);
   color: #00ff00;
   padding: 10px;

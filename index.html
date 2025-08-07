@@ -24,12 +24,24 @@
       "
     ></div>
 
+    <!-- Controls Toggle Button (Desktop Only) -->
+    <button id="controls-toggle">📱 Show Controls</button>
+    
     <!-- GameBoy-inspired full-screen layout -->
     <div id="gameboy-container">
       <div id="screen-area">
         <canvas id="gameCanvas"></canvas>
         <div id="status-bar">
           <span id="status-text"></span>
+        </div>
+        
+        <!-- Initial Instructions (Desktop Only) -->
+        <div id="initial-instructions">
+          <h3>🎮 Welcome to Interactive CV</h3>
+          <p>Use <strong>Arrow Keys</strong> or <strong>WASD</strong> to move</p>
+          <p>Press <strong>SPACE</strong> to interact</p>
+          <p>Explore rooms to discover my experience!</p>
+          <div class="dismiss-hint">Click anywhere to dismiss</div>
         </div>
       </div>
       

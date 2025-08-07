@@ -9,6 +9,7 @@ import { getCurrentRoom, initializeRoomSystem } from "./modules/roomManager";
 import { initializeBossInteraction, checkBossProximity } from "./modules/bossInteraction";
 import { answerQuestion, getFallbackResponse, isAIReady, switchModel, getCurrentModelKey, setProgressUpdateCallback, startBackgroundLoading, setBackgroundProgressCallback } from "./modules/aiProcessor";
 import { gameBoyConversation } from "./modules/gameboyConversation";
+import { initializeDesktopControls } from "./modules/desktopControls";
 
 // --- Setup canvas ---
 const dummyMap = Array(MAP_HEIGHT_TILES)
@@ -684,6 +685,9 @@ loadAssets(() => {
   console.log("Setting up input listeners...");
   setupInputListeners();
   setupTouchControls();
+
+  console.log("Initializing desktop controls...");
+  initializeDesktopControls();
 
   console.log("🚀 Starting background AI model preloading...");
   console.log("🎮 Game will start immediately while models load in background!");
