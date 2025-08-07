@@ -14,8 +14,50 @@ let isModelLoaded = false;
 let currentModelName = "";
 let currentModelType = "";
 
-// CDN-based transformers.js loading
+// CDN-based transformers.js loading  
 let transformersModule: any = null;
+
+// Mobile device detection for iOS Safari compatibility
+function isMobileDevice(): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function isIOSDevice(): boolean {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+// iOS-specific fallback responses due to Safari compatibility issues
+function getIOSFallbackResponse(question: string): string {
+  const lowerQ = question.toLowerCase();
+  
+  // Greeting responses
+  if (lowerQ.includes('hi') || lowerQ.includes('hello') || lowerQ.includes('ciao')) {
+    return "Hi there! I'm Nicolo Pedrani. Welcome to my interactive CV! I'm a Data Scientist at Deloitte Consulting and former R&D System Engineer. What would you like to know about my experience?";
+  }
+  
+  // Experience-related questions
+  if (lowerQ.includes('experience') || lowerQ.includes('work') || lowerQ.includes('job')) {
+    return "I currently work as a Data Scientist at Deloitte Consulting, focusing on business analytics, machine learning, and client solutions. Previously, I was an R&D System Engineer at Leonardo SpA, working on defense systems and infrared technologies.";
+  }
+  
+  // Skills questions
+  if (lowerQ.includes('skill') || lowerQ.includes('technology') || lowerQ.includes('programming')) {
+    return "My key skills include Python, R, machine learning, PyTorch, scikit-learn, Power BI, Azure ML, and statistical analysis. I also have experience with MATLAB, Simulink, and system engineering from my defense industry background.";
+  }
+  
+  // Education questions  
+  if (lowerQ.includes('education') || lowerQ.includes('study') || lowerQ.includes('university')) {
+    return "I have a strong educational background in engineering and data science, which has equipped me with both theoretical knowledge and practical problem-solving skills across multiple domains.";
+  }
+  
+  // Projects questions
+  if (lowerQ.includes('project') || lowerQ.includes('achievement')) {
+    return "I've worked on diverse projects including NPS analysis, energy cost optimization, fashion retail forecasting, recommendation systems, infrared detection systems, and missile warning technologies. Each project combined technical innovation with real business impact.";
+  }
+  
+  // Default response
+  return "Thanks for your question! Due to iOS Safari compatibility limitations, I'm using simplified responses. I'm Nicolo Pedrani - a Data Scientist at Deloitte with R&D experience at Leonardo SpA. I specialize in machine learning, business analytics, and defense systems. What specific aspect would you like to know more about?";
+}
 
 // Progress tracking callback for UI updates
 let progressUpdateCallback:
@@ -386,6 +428,16 @@ What is your name?<|im_end|>
 export async function initializeAI(): Promise<boolean> {
   try {
     console.log("🔧 Checking AI system initialization...");
+    
+    // Force fallback mode for iOS devices due to known Safari compatibility issues
+    if (isIOSDevice()) {
+      console.log("🍎 iOS device detected - disabling AI models due to Safari ONNX Runtime issues");
+      isModelLoaded = false;
+      currentModelName = "iOS Fallback System";
+      currentModelType = "fallback";
+      console.log("✅ iOS fallback system initialized successfully!");
+      return true;
+    }
 
     // Skip AI loading if configured for fallback only
     if (MODEL_CONFIG.useOnlyFallback) {
@@ -510,6 +562,12 @@ export async function switchModel(modelKey: string): Promise<boolean> {
 
 export async function answerQuestion(question: string): Promise<string> {
   try {
+    // iOS Safari compatibility check - known issue with transformers.js v3+
+    if (isIOSDevice()) {
+      console.log("🍎 iOS device detected - using fallback responses due to known Safari compatibility issues");
+      return getIOSFallbackResponse(question);
+    }
+
     // Enhanced mobile error handling
     if (!aiPipeline || !isModelLoaded) {
       console.log("🔄 AI pipeline not ready, attempting to initialize...");
@@ -518,6 +576,9 @@ export async function answerQuestion(question: string): Promise<string> {
         return false;
       });
       if (!initialized) {
+        if (isMobileDevice()) {
+          return "I'm sorry, AI processing isn't fully supported on mobile devices yet. Here are some key highlights from my experience: I'm a Data Scientist at Deloitte with expertise in Python, machine learning, and business analytics. I also have R&D experience in defense systems at Leonardo SpA. Feel free to ask specific questions!";
+        }
         return "I'm sorry, the AI system is currently unavailable on this device. Please try again or switch to desktop.";
       }
     }
