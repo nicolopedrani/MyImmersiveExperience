@@ -60,7 +60,7 @@ class GameBoyConversation {
       height: 0;
       overflow: hidden;
       transition: height 0.3s ease-in-out;
-      z-index: 10;
+      z-index: 100;
       display: none;
     `;
 
@@ -108,7 +108,7 @@ class GameBoyConversation {
       justify-content: center;
       opacity: 0;
       transition: opacity 0.3s ease;
-      z-index: 20;
+      z-index: 120;
     `;
 
     // Create input area
@@ -359,32 +359,54 @@ class GameBoyConversation {
       const isRecommended = compatInfo.recommendedModel === model.key;
       
       let statusText = '';
+      let optionText = '';
+      
       if (!isSupported) {
-        if (model.key === 'phi3' && browserInfo.isMobile) {
+        // For unsupported models, make it clear they are disabled
+        if (model.key === 'phi3') {
           statusText = ' - Desktop only';
-        } else if (browserInfo.os === 'iOS' && browserInfo.name === 'Safari') {
-          statusText = ' - Not compatible with iOS Safari';
+        } else if (model.key === 'qwen' && browserInfo.os === 'iOS') {
+          statusText = ' - Not available on iOS';
+        } else if (model.key === 'distilbert' && browserInfo.os === 'iOS' && browserInfo.name === 'Safari') {
+          statusText = ' - Safari not supported';
         } else {
-          statusText = ' - Limited compatibility';
+          statusText = ' - Not available';
         }
-      } else if (isRecommended) {
-        statusText = ' - Recommended';
+        // Use grayed out text for disabled options
+        optionText = `${model.icon} ${model.name} (${model.size})${statusText}`;
+      } else {
+        // For supported models, show full description
+        statusText = isRecommended ? ' - Recommended' : '';
+        optionText = `${model.icon} ${model.name} (${model.size}) - ${model.description}${statusText}`;
       }
       
-      const optionText = `${model.icon} ${model.name} (${model.size}) - ${model.description}${statusText}`;
-      
-      return `<option value="${model.key}" ${!isSupported ? 'disabled' : ''}>
+      return `<option value="${model.key}" ${!isSupported ? 'disabled style="color: #666; background: #f0f0f0;"' : ''}>
         ${optionText}
       </option>`;
     }).join('');
     
-    // Make sure current selection is valid
+    // Make sure current selection is valid and supported
     const currentModel = getCurrentModelKey();
-    if (this.modelSelector.querySelector(`option[value="${currentModel}"]`)) {
+    const currentModelSupported = compatInfo.aiSupport[currentModel as keyof typeof compatInfo.aiSupport];
+    
+    if (currentModelSupported && this.modelSelector.querySelector(`option[value="${currentModel}"]:not([disabled])`)) {
       this.modelSelector.value = currentModel;
     } else {
-      // Fallback to recommended model if current is not available
-      this.modelSelector.value = compatInfo.recommendedModel;
+      // Switch to the recommended model if current is not supported
+      const recommendedOption = this.modelSelector.querySelector(`option[value="${compatInfo.recommendedModel}"]:not([disabled])`);
+      if (recommendedOption) {
+        this.modelSelector.value = compatInfo.recommendedModel;
+        // Automatically switch the AI processor to use the recommended model
+        switchModel(compatInfo.recommendedModel as any);
+      } else {
+        // If even recommended model is disabled, select the first available model
+        const firstAvailable = this.modelSelector.querySelector('option:not([disabled])');
+        if (firstAvailable) {
+          const firstAvailableValue = (firstAvailable as HTMLOptionElement).value;
+          this.modelSelector.value = firstAvailableValue;
+          switchModel(firstAvailableValue as any);
+        }
+      }
     }
     
     // Add mobile-specific improvements for the dropdown
@@ -396,6 +418,14 @@ class GameBoyConversation {
       // Add touch-friendly styling
       this.modelSelector.style.minHeight = '44px'; // iOS recommended touch target
       this.modelSelector.style.padding = '12px 8px';
+      this.modelSelector.style.borderRadius = '8px';
+      this.modelSelector.style.border = '2px solid #333';
+      this.modelSelector.style.background = 'white';
+      this.modelSelector.style.color = '#000';
+      
+      // Ensure dropdown appears above other elements
+      this.modelSelector.style.zIndex = '110';
+      this.modelSelector.style.position = 'relative';
     }
   }
 

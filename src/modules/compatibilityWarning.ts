@@ -10,6 +10,7 @@ interface WarningDialogOptions {
 
 class CompatibilityWarningManager {
   private warningShown: Set<string> = new Set();
+  private currentModal: HTMLElement | null = null;
   
   shouldShowWarning(options: WarningDialogOptions = { showOnce: true, storageKey: 'compatibility_warning_shown', autoShow: true }): boolean {
     const compatInfo = getCompatibilityInfo();
@@ -75,6 +76,9 @@ class CompatibilityWarningManager {
             
             <div class="recommended-model">
               <p><strong>💡 Recommended:</strong> ${this.getModelDisplayName(compatInfo.recommendedModel)}</p>
+              ${!compatInfo.aiSupport[compatInfo.recommendedModel] ? 
+                '<p class="fallback-notice"><em>Note: This will use pre-written responses as live AI processing is not supported on your browser.</em></p>' : 
+                ''}
             </div>
           </div>
           
@@ -116,7 +120,14 @@ class CompatibilityWarningManager {
   
   showCompatibilityWarning(options: WarningDialogOptions = { showOnce: true, storageKey: 'compatibility_warning_shown', autoShow: true }): Promise<void> {
     return new Promise((resolve) => {
+      // Close any existing modal first
+      if (this.currentModal) {
+        document.body.removeChild(this.currentModal);
+        this.currentModal = null;
+      }
+      
       const dialog = this.createCompatibilityWarningDialog();
+      this.currentModal = dialog;
       document.body.appendChild(dialog);
       
       // Focus management
@@ -130,7 +141,10 @@ class CompatibilityWarningManager {
           localStorage.setItem(options.storageKey, 'true');
         }
         
-        document.body.removeChild(dialog);
+        if (document.body.contains(dialog)) {
+          document.body.removeChild(dialog);
+        }
+        this.currentModal = null;
         resolve();
       };
       
@@ -247,11 +261,12 @@ export const warningDialogStyles = `
   right: 0;
   bottom: 0;
   background: rgba(15, 56, 15, 0.8);
-  z-index: 1000;
+  z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  backdrop-filter: blur(2px);
 }
 
 .compatibility-warning-modal {
@@ -383,6 +398,16 @@ export const warningDialogStyles = `
   border: 2px solid var(--gameboy-light, #8bac0f);
 }
 
+.fallback-notice {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(244, 162, 97, 0.3);
+  border: 1px solid #f4a261;
+  font-size: 12px;
+  color: var(--gameboy-dark, #0f380f);
+  border-radius: 4px;
+}
+
 .warnings-section ul,
 .suggestions-section ul {
   margin: 8px 0;
@@ -450,17 +475,32 @@ export const warningDialogStyles = `
 .compatibility-indicator.poor { border-color: #e63946; }
 
 @media (max-width: 768px) {
+  .compatibility-warning-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+  
   .compatibility-warning-modal {
     width: 100%;
-    height: 100%;
+    height: 100vh;
     max-width: none;
     max-height: none;
     border: none;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .warning-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .warning-footer {
     flex-direction: column;
     gap: 12px;
+    flex-shrink: 0;
   }
   
   .model-support-grid {
@@ -471,6 +511,12 @@ export const warningDialogStyles = `
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
+  }
+  
+  /* Prevent viewport zoom on mobile */
+  .compatibility-warning-modal * {
+    font-size: max(16px, 1em);
+    line-height: 1.4;
   }
 }
 `;

@@ -23,14 +23,39 @@ interface ConsentResult {
   remember?: boolean;
 }
 
-// Store user preferences
-const USER_CONSENT_KEY = 'phi3_model_consent';
+// Store user preferences - separate keys for each model
+const PHI3_USER_CONSENT_KEY = 'phi3_model_consent';
+const QWEN_USER_CONSENT_KEY = 'qwen_model_consent';
 const DEVICE_CAPABILITY_KEY = 'device_capability_check';
-const DOWNLOAD_STATE_KEY = 'phi3_download_state';
+const PHI3_DOWNLOAD_STATE_KEY = 'phi3_download_state';
+const QWEN_DOWNLOAD_STATE_KEY = 'qwen_download_state';
+
+function getConsentKey(modelKey: string): string {
+  switch (modelKey) {
+    case 'phi3':
+      return PHI3_USER_CONSENT_KEY;
+    case 'qwen':
+      return QWEN_USER_CONSENT_KEY;
+    default:
+      return `${modelKey}_model_consent`;
+  }
+}
+
+function getDownloadStateKey(modelKey: string): string {
+  switch (modelKey) {
+    case 'phi3':
+      return PHI3_DOWNLOAD_STATE_KEY;
+    case 'qwen':
+      return QWEN_DOWNLOAD_STATE_KEY;
+    default:
+      return `${modelKey}_download_state`;
+  }
+}
 
 export function hasUserConsentFor(modelKey: string): boolean {
   try {
-    const stored = localStorage.getItem(`${USER_CONSENT_KEY}_${modelKey}`);
+    const consentKey = getConsentKey(modelKey);
+    const stored = localStorage.getItem(consentKey);
     return stored === 'approved';
   } catch (error) {
     console.warn('Cannot access localStorage for consent check');
@@ -40,10 +65,12 @@ export function hasUserConsentFor(modelKey: string): boolean {
 
 export function storeUserConsent(modelKey: string, approved: boolean): void {
   try {
-    localStorage.setItem(`${USER_CONSENT_KEY}_${modelKey}`, approved ? 'approved' : 'denied');
+    const consentKey = getConsentKey(modelKey);
+    const downloadStateKey = getDownloadStateKey(modelKey);
+    localStorage.setItem(consentKey, approved ? 'approved' : 'denied');
     if (approved) {
       // Also mark that user has decided (approved download)
-      localStorage.setItem(`${DOWNLOAD_STATE_KEY}_${modelKey}`, 'user_approved');
+      localStorage.setItem(downloadStateKey, 'user_approved');
     }
   } catch (error) {
     console.warn('Cannot store user consent in localStorage');
@@ -52,7 +79,8 @@ export function storeUserConsent(modelKey: string, approved: boolean): void {
 
 export function hasUserApprovedDownload(modelKey: string): boolean {
   try {
-    const state = localStorage.getItem(`${DOWNLOAD_STATE_KEY}_${modelKey}`);
+    const downloadStateKey = getDownloadStateKey(modelKey);
+    const state = localStorage.getItem(downloadStateKey);
     const hasApproved = state === 'user_approved';
     console.log(`🔍 Download approval check for ${modelKey}: ${hasApproved} (stored: ${state})`);
     return hasApproved;
@@ -64,7 +92,8 @@ export function hasUserApprovedDownload(modelKey: string): boolean {
 
 export function markDownloadApproved(modelKey: string): void {
   try {
-    localStorage.setItem(`${DOWNLOAD_STATE_KEY}_${modelKey}`, 'user_approved');
+    const downloadStateKey = getDownloadStateKey(modelKey);
+    localStorage.setItem(downloadStateKey, 'user_approved');
     console.log(`✅ Marked ${modelKey} as user approved`);
   } catch (error) {
     console.warn('Cannot store download approval state');
@@ -74,8 +103,10 @@ export function markDownloadApproved(modelKey: string): void {
 // Helper function to reset state for testing
 export function clearDownloadState(modelKey: string): void {
   try {
-    localStorage.removeItem(`${DOWNLOAD_STATE_KEY}_${modelKey}`);
-    localStorage.removeItem(`${USER_CONSENT_KEY}_${modelKey}`);
+    const downloadStateKey = getDownloadStateKey(modelKey);
+    const consentKey = getConsentKey(modelKey);
+    localStorage.removeItem(downloadStateKey);
+    localStorage.removeItem(consentKey);
     console.log(`🧹 Cleared all consent state for ${modelKey}`);
   } catch (error) {
     console.warn('Cannot clear download state');
@@ -136,11 +167,16 @@ export async function requestModelConsent(modelKey: string, modelInfo: any, onPr
     size: modelInfo.size,
     description: modelInfo.description,
     requirements: [
-      `${modelInfo.minMemoryGB}GB RAM`,
-      'Desktop browser recommended',
+      `${modelInfo.minMemoryGB || '4'}GB RAM`,
+      modelKey === 'phi3' ? 'Desktop browser recommended' : 'Modern browser required',
       ...(modelInfo.recommendedWebGPU ? ['WebGPU support (Chrome/Edge)'] : [])
     ],
-    benefits: [
+    benefits: modelKey === 'qwen' ? [
+      'Conversational AI capabilities',
+      'Natural dialogue interactions',
+      'Context-aware responses',
+      'Better than basic Q&A'
+    ] : [
       'Advanced conversational AI',
       'Professional-quality responses',
       'Better understanding of context',
@@ -195,10 +231,15 @@ function showConsentDialog(info: ConsentInfo, networkCheck: any, callback: (resu
     font-family: 'Courier New', monospace;
   `;
 
+  const modelTitle = info.modelKey === 'qwen' ? '💬 Qwen Chat AI' : '🧠 Phi-3 Advanced AI';
+  const modelSubtitle = info.modelKey === 'qwen' ? 
+    'Conversational AI for interactive dialogue' : 
+    'Enhanced conversational intelligence for your CV';
+
   dialog.innerHTML = `
     <div style="text-align: center; margin-bottom: 20px;">
-      <h2 style="margin: 0; color: #333; font-size: 24px;">🧠 Phi-3 Advanced AI</h2>
-      <p style="margin: 10px 0; color: #666; font-size: 14px;">Enhanced conversational intelligence for your CV</p>
+      <h2 style="margin: 0; color: #333; font-size: 24px;">${modelTitle}</h2>
+      <p style="margin: 10px 0; color: #666; font-size: 14px;">${modelSubtitle}</p>
     </div>
 
     <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
@@ -218,7 +259,7 @@ function showConsentDialog(info: ConsentInfo, networkCheck: any, callback: (resu
         ${networkCheck.networkInfo.warning || `Slow connection detected. Download may take ${info.estimatedTime}.`}
       </p>
       <p style="margin: 10px 0 0 0; color: #856404; line-height: 1.6; font-size: 13px;">
-        💡 <strong>Recommendations:</strong> Switch to WiFi, use a faster connection, or try the lighter Qwen model instead.
+        💡 <strong>Recommendations:</strong> Switch to WiFi, use a faster connection, or try the ${info.modelKey === 'qwen' ? 'lighter DistilBERT model' : 'lighter Qwen or DistilBERT models'} instead.
       </p>
     </div>
     ` : ''}
@@ -239,7 +280,7 @@ function showConsentDialog(info: ConsentInfo, networkCheck: any, callback: (resu
 
     <div style="background: #d1ecf1; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
       <p style="margin: 0; color: #0c5460; font-size: 13px; text-align: center;">
-        💡 <strong>Tip:</strong> You can always switch back to lighter models (DistilBERT/Qwen) anytime
+        💡 <strong>Tip:</strong> You can always switch back to ${info.modelKey === 'qwen' ? 'lighter DistilBERT model' : 'lighter models (DistilBERT/Qwen)'} anytime
       </p>
     </div>
 
@@ -273,7 +314,7 @@ function showConsentDialog(info: ConsentInfo, networkCheck: any, callback: (resu
         font-family: 'Courier New', monospace;
         font-weight: bold;
         transition: background-color 0.2s;
-      ">Download Phi-3 🚀</button>
+      ">Download ${info.modelKey === 'qwen' ? 'Qwen 💬' : 'Phi-3 🚀'}</button>
     </div>
   `;
 
@@ -338,11 +379,16 @@ function showDownloadProgress(dialog: HTMLDivElement, callback: (result: Consent
   // Find parent overlay and style for cleanup
   const overlay = dialog.parentElement as HTMLDivElement;
   const style = document.head.querySelector('style:last-child') as HTMLStyleElement;
+  // Get model info from dialog title  
+  const isQwen = dialog.innerHTML.includes('Qwen Chat AI');
+  const progressTitle = isQwen ? '💬 Downloading Qwen' : '🧠 Downloading Phi-3';
+  const progressSubtitle = isQwen ? 'Conversational AI model is downloading...' : 'Advanced AI model is downloading...';
+
   // Replace dialog content with progress view
   dialog.innerHTML = `
     <div style="text-align: center; margin-bottom: 30px;">
-      <h2 style="margin: 0; color: #333; font-size: 24px;">🧠 Downloading Phi-3</h2>
-      <p style="margin: 10px 0; color: #666; font-size: 14px;">Advanced AI model is downloading...</p>
+      <h2 style="margin: 0; color: #333; font-size: 24px;">${progressTitle}</h2>
+      <p style="margin: 10px 0; color: #666; font-size: 14px;">${progressSubtitle}</p>
     </div>
 
     <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
