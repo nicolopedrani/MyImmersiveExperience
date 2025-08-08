@@ -14,21 +14,27 @@ class CompatibilityWarningManager {
   
   shouldShowWarning(options: WarningDialogOptions = { showOnce: true, storageKey: 'compatibility_warning_shown', autoShow: true }): boolean {
     const compatInfo = getCompatibilityInfo();
+    const browserInfo = getBrowserInfo();
     
-    // Don't show warning for excellent compatibility
-    if (compatInfo.level === 'excellent') {
-      return false;
+    // ALWAYS show warning for iOS devices (immediate warning required)
+    if (browserInfo.os === 'iOS') {
+      return true;
     }
     
-    // Check if warning was already shown (if showOnce is true)
-    if (options.showOnce) {
-      const hasShown = localStorage.getItem(options.storageKey) === 'true';
-      if (hasShown) {
-        return false;
+    // Show warning for other problematic browser/device combinations
+    if (compatInfo.level === 'poor' || compatInfo.warnings.length > 0) {
+      // Check if warning was already shown (if showOnce is true)
+      if (options.showOnce) {
+        const hasShown = localStorage.getItem(options.storageKey) === 'true';
+        if (hasShown) {
+          return false;
+        }
       }
+      return options.autoShow;
     }
     
-    return options.autoShow && (compatInfo.level === 'poor' || compatInfo.warnings.length > 0);
+    // Don't show warning for good compatibility
+    return false;
   }
   
   createCompatibilityWarningDialog(): HTMLElement {
@@ -58,8 +64,12 @@ class CompatibilityWarningManager {
           </div>
           
           <div class="ai-support-matrix">
-            <h4>🤖 AI Model Support:</h4>
+            <h4>🤖 Response Options:</h4>
             <div class="model-support-grid">
+              <div class="model-item supported">
+                <span class="model-name">🔄 Pre-Written Responses</span>
+                <span class="model-status">✅ Always Available</span>
+              </div>
               <div class="model-item ${compatInfo.aiSupport.distilbert ? 'supported' : 'unsupported'}">
                 <span class="model-name">🚀 DistilBERT Q&A</span>
                 <span class="model-status">${compatInfo.aiSupport.distilbert ? '✅ Supported' : '❌ Unsupported'}</span>
@@ -194,6 +204,7 @@ class CompatibilityWarningManager {
   
   private getModelDisplayName(modelKey: string): string {
     switch (modelKey) {
+      case 'prewritten': return '🔄 Pre-Written Responses (0MB) - Instant & reliable';
       case 'distilbert': return '🚀 DistilBERT Q&A (65MB) - Fast responses';
       case 'qwen': return '💬 Qwen Chat (500MB) - Conversational AI';
       case 'phi3': return '🧠 Phi-3 Advanced (1.8GB) - Premium experience';
@@ -207,6 +218,8 @@ class CompatibilityWarningManager {
     const browserInfo = getBrowserInfo();
     
     switch (modelKey) {
+      case 'prewritten':
+        return { compatible: true };
       case 'distilbert':
         return { compatible: compatInfo.aiSupport.distilbert };
       case 'qwen':

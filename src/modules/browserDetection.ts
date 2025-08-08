@@ -18,11 +18,12 @@ export interface BrowserInfo {
 export interface CompatibilityInfo {
   level: 'excellent' | 'good' | 'limited' | 'poor';
   aiSupport: {
+    prewritten: boolean;
     distilbert: boolean;
     qwen: boolean; 
     phi3: boolean;
   };
-  recommendedModel: 'distilbert' | 'qwen' | 'phi3';
+  recommendedModel: 'prewritten' | 'distilbert' | 'qwen' | 'phi3';
   warnings: string[];
   suggestions: string[];
   message: string;
@@ -270,6 +271,7 @@ class BrowserDetector {
     const info: CompatibilityInfo = {
       level: browser.compatibilityLevel,
       aiSupport: {
+        prewritten: true, // Pre-written responses always work
         distilbert: this.canRunDistilBERT(browser),
         qwen: this.canRunQwen(browser),
         phi3: this.canRunPhi3(browser)
@@ -284,10 +286,10 @@ class BrowserDetector {
   }
 
   private canRunDistilBERT(browser: BrowserInfo): boolean {
-    // DistilBERT should work on most modern browsers except very old ones
-    // iOS Safari has compatibility issues, but iOS Chrome should work
-    if (browser.os === 'iOS' && browser.name === 'Safari') {
-      return false; // Known compatibility issues with iOS Safari
+    // Based on research: Transformers.js v3 has critical issues on iOS devices
+    // Both iOS Safari and iOS Chrome crash due to WebAssembly/memory issues
+    if (browser.os === 'iOS') {
+      return false; // Transformers.js v3 crashes on all iOS browsers
     }
     return browser.supportsWebAssembly;
   }
@@ -318,22 +320,28 @@ class BrowserDetector {
            (browser.name === 'Chrome' || browser.name === 'Edge');
   }
 
-  private getRecommendedModel(browser: BrowserInfo): 'distilbert' | 'qwen' | 'phi3' {
+  private getRecommendedModel(browser: BrowserInfo): 'prewritten' | 'distilbert' | 'qwen' | 'phi3' {
+    // iOS devices always use pre-written responses
+    if (browser.os === 'iOS') {
+      return 'prewritten';
+    }
+    
+    // For devices that can run AI models, recommend best available
     if (this.canRunPhi3(browser)) return 'phi3';
     if (this.canRunQwen(browser)) return 'qwen';
     if (this.canRunDistilBERT(browser)) return 'distilbert';
     
-    // If no AI models are supported, still return distilbert as fallback
-    // but compatibility message will explain it's for pre-written responses only
-    return 'distilbert';
+    // Fallback to pre-written responses for incompatible devices
+    return 'prewritten';
   }
 
   private getWarnings(browser: BrowserInfo): string[] {
     const warnings: string[] = [];
 
-    if (browser.os === 'iOS' && browser.name === 'Safari') {
-      warnings.push('iOS Safari has known compatibility issues with AI models');
-      warnings.push('Consider using Chrome or Firefox for better performance');
+    if (browser.os === 'iOS') {
+      warnings.push('iOS devices have critical compatibility issues with Transformers.js v3');
+      warnings.push('AI models will crash on iOS - only pre-written responses available');
+      warnings.push('Use a desktop browser for full AI model support');
     }
 
     if (browser.isMobile && browser.estimatedRAM < 2) {
@@ -354,12 +362,16 @@ class BrowserDetector {
   private getSuggestions(browser: BrowserInfo): string[] {
     const suggestions: string[] = [];
 
-    if (browser.name === 'Safari' && browser.os !== 'iOS') {
+    if (browser.os === 'iOS') {
+      suggestions.push('Pre-written responses provide instant, reliable answers');
+      suggestions.push('For AI models, use desktop Chrome, Edge, or Firefox');
+    } else if (browser.name === 'Safari' && browser.os !== 'iOS') {
       suggestions.push('Switch to Chrome or Edge for better AI model support');
     }
 
-    if (browser.isMobile) {
+    if (browser.isMobile && browser.os !== 'iOS') {
       suggestions.push('Try the desktop version for access to all AI models');
+      suggestions.push('Pre-written responses work great on mobile devices');
     }
 
     if (!browser.supportsWebGPU && browser.isDesktop) {
@@ -373,12 +385,8 @@ class BrowserDetector {
     // Check if any AI models are actually supported
     const hasAnyAISupport = this.canRunDistilBERT(browser) || this.canRunQwen(browser) || this.canRunPhi3(browser);
     
-    if (browser.os === 'iOS' && browser.name === 'Safari') {
-      return `iOS Safari has compatibility limitations with AI models. You'll receive pre-written responses instead of live AI processing. For the full experience, try Chrome on iOS or the desktop version.`;
-    }
-
-    if (browser.os === 'iOS' && browser.name === 'Chrome') {
-      return `Chrome on iOS has good compatibility! You can use DistilBERT for quick responses${this.canRunQwen(browser) ? ' and Qwen for conversations' : ''}. For premium AI features, try the desktop version.`;
+    if (browser.os === 'iOS') {
+      return `iOS devices cannot run AI models due to Transformers.js v3 compatibility issues. You'll use pre-written responses that are instant and reliable. For live AI processing, please use a desktop browser with Chrome, Edge, or Firefox.`;
     }
 
     if (browser.isMobile && browser.name === 'Chrome' && browser.os === 'Android') {
