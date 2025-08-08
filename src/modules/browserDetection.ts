@@ -64,9 +64,12 @@ class BrowserDetector {
   private getBrowserName(): string {
     const ua = this.userAgent;
     
-    if (ua.includes('Chrome') && !ua.includes('Edge')) {
+    // Check for iOS Chrome first (uses CriOS instead of Chrome)
+    if (ua.includes('CriOS')) {
       return 'Chrome';
-    } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+    } else if (ua.includes('Chrome') && !ua.includes('Edge')) {
+      return 'Chrome';
+    } else if (ua.includes('Safari') && !ua.includes('Chrome') && !ua.includes('CriOS')) {
       return 'Safari';
     } else if (ua.includes('Firefox')) {
       return 'Firefox';
@@ -85,10 +88,14 @@ class BrowserDetector {
     const ua = this.userAgent;
     let match: RegExpMatchArray | null;
 
-    if (ua.includes('Chrome') && !ua.includes('Edge')) {
+    // Handle iOS Chrome version (CriOS)
+    if (ua.includes('CriOS')) {
+      match = ua.match(/CriOS\/(\d+\.\d+)/);
+      return match ? match[1] : 'Unknown';
+    } else if (ua.includes('Chrome') && !ua.includes('Edge')) {
       match = ua.match(/Chrome\/(\d+\.\d+)/);
       return match ? match[1] : 'Unknown';
-    } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+    } else if (ua.includes('Safari') && !ua.includes('Chrome') && !ua.includes('CriOS')) {
       match = ua.match(/Safari\/(\d+\.\d+)/);
       return match ? match[1] : 'Unknown';
     } else if (ua.includes('Firefox')) {
@@ -105,9 +112,12 @@ class BrowserDetector {
   private getBrowserEngine(): string {
     const ua = this.userAgent;
     
-    if (ua.includes('WebKit') && ua.includes('Chrome')) {
+    // iOS Chrome uses WebKit but has Blink-like capabilities
+    if (ua.includes('CriOS')) {
+      return 'Blink'; // iOS Chrome - treat as Blink for compatibility
+    } else if (ua.includes('WebKit') && ua.includes('Chrome')) {
       return 'Blink'; // Chrome, Edge, Opera
-    } else if (ua.includes('WebKit') && !ua.includes('Chrome')) {
+    } else if (ua.includes('WebKit') && !ua.includes('Chrome') && !ua.includes('CriOS')) {
       return 'WebKit'; // Safari
     } else if (ua.includes('Gecko') && ua.includes('Firefox')) {
       return 'Gecko'; // Firefox
@@ -275,8 +285,9 @@ class BrowserDetector {
 
   private canRunDistilBERT(browser: BrowserInfo): boolean {
     // DistilBERT should work on most modern browsers except very old ones
+    // iOS Safari has compatibility issues, but iOS Chrome should work
     if (browser.os === 'iOS' && browser.name === 'Safari') {
-      return false; // Known compatibility issues
+      return false; // Known compatibility issues with iOS Safari
     }
     return browser.supportsWebAssembly;
   }
@@ -310,6 +321,10 @@ class BrowserDetector {
   private getRecommendedModel(browser: BrowserInfo): 'distilbert' | 'qwen' | 'phi3' {
     if (this.canRunPhi3(browser)) return 'phi3';
     if (this.canRunQwen(browser)) return 'qwen';
+    if (this.canRunDistilBERT(browser)) return 'distilbert';
+    
+    // If no AI models are supported, still return distilbert as fallback
+    // but compatibility message will explain it's for pre-written responses only
     return 'distilbert';
   }
 
@@ -355,20 +370,31 @@ class BrowserDetector {
   }
 
   private getCompatibilityMessage(browser: BrowserInfo): string {
+    // Check if any AI models are actually supported
+    const hasAnyAISupport = this.canRunDistilBERT(browser) || this.canRunQwen(browser) || this.canRunPhi3(browser);
+    
     if (browser.os === 'iOS' && browser.name === 'Safari') {
-      return `iOS Safari has compatibility limitations with AI models. You'll receive pre-written responses instead of live AI processing. For the full experience, try the desktop version or use Chrome/Firefox.`;
+      return `iOS Safari has compatibility limitations with AI models. You'll receive pre-written responses instead of live AI processing. For the full experience, try Chrome on iOS or the desktop version.`;
     }
 
-    if (browser.isMobile && browser.name === 'Chrome') {
-      return `Chrome mobile has good compatibility! You can use DistilBERT for quick responses${this.canRunQwen(browser) ? ' and Qwen for conversations' : ''}. For premium AI features, try the desktop version.`;
+    if (browser.os === 'iOS' && browser.name === 'Chrome') {
+      return `Chrome on iOS has good compatibility! You can use DistilBERT for quick responses${this.canRunQwen(browser) ? ' and Qwen for conversations' : ''}. For premium AI features, try the desktop version.`;
+    }
+
+    if (browser.isMobile && browser.name === 'Chrome' && browser.os === 'Android') {
+      return `Chrome on Android has good compatibility! You can use DistilBERT for quick responses${this.canRunQwen(browser) ? ' and Qwen for conversations' : ''}. For premium AI features, try the desktop version.`;
     }
 
     if (browser.isMobile && browser.name === 'Firefox') {
       return `Firefox mobile has decent compatibility. You can use DistilBERT for responses. Desktop Firefox offers better performance with more AI models.`;
     }
 
+    if (browser.isMobile && !hasAnyAISupport) {
+      return `${browser.name} mobile has limited AI support. You'll receive pre-written responses. Desktop browsers offer much better AI performance and features.`;
+    }
+
     if (browser.isMobile) {
-      return `${browser.name} mobile has limited AI support. You'll get basic responses, but desktop browsers offer much better performance and features.`;
+      return `${browser.name} mobile has basic AI support. Desktop browsers offer much better performance and more AI models.`;
     }
 
     if (browser.isDesktop && (browser.name === 'Chrome' || browser.name === 'Edge')) {

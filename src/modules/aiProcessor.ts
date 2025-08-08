@@ -1,6 +1,6 @@
 // modules/aiProcessor.ts - AI processing with Transformers.js v3 CDN integration
 
-import { requestModelConsent, hasUserConsentFor } from "./modelConsent";
+import { requestModelConsent, hasUserConsentFor, hasUserApprovedDownload } from "./modelConsent";
 
 declare global {
   interface Window {
@@ -740,8 +740,8 @@ export async function switchModel(modelKey: string): Promise<boolean> {
     return false;
   }
 
-  // Check user consent for large models
-  if (modelKey === 'phi3' && !hasUserConsentFor(modelKey)) {
+  // Check user consent for large models (both Phi-3 and Qwen)
+  if ((modelKey === 'phi3' || modelKey === 'qwen') && !hasUserConsentFor(modelKey)) {
     console.log(`🤔 Requesting user consent for ${modelKey} model...`);
     try {
       const consent = await requestModelConsent(modelKey, AI_MODELS[modelKey]);
@@ -1451,37 +1451,40 @@ export async function startBackgroundLoading(): Promise<void> {
   // Always start with the best model for this device
   const loadingPromises: Promise<boolean>[] = [];
   
+  // Only preload models that don't require consent or have already been approved
   if (bestModel === 'phi3') {
-    // High-end device: Load Phi-3 first, then fallbacks
-    console.log("🧠 High-end device detected: Loading Phi-3 first");
-    loadingPromises.push(
-      loadModelInBackground('phi3').then(success => {
-        console.log(success ? "✅ Phi-3 preloaded!" : "❌ Phi-3 failed, will fallback");
-        return success;
-      })
-    );
+    // High-end device: Only load approved models
+    console.log("🧠 High-end device detected: Checking consent for large models");
     
-    // Also preload Qwen as backup (smaller, more reliable)
-    setTimeout(() => {
+    // Check if Phi-3 has been approved by user
+    if (hasUserApprovedDownload('phi3')) {
+      console.log("✅ Phi-3 previously approved, preloading...");
       loadingPromises.push(
-        loadModelInBackground('qwen').then(success => {
-          console.log(success ? "✅ Qwen backup preloaded!" : "⚠️ Qwen backup failed");
+        loadModelInBackground('phi3').then(success => {
+          console.log(success ? "✅ Phi-3 preloaded!" : "❌ Phi-3 failed, will fallback");
           return success;
         })
       );
-    }, 5000); // Start Qwen 5 seconds after Phi-3
+    } else {
+      console.log("⏳ Phi-3 requires user consent, skipping background load");
+    }
+
+    // Check if Qwen has been approved by user
+    if (hasUserApprovedDownload('qwen')) {
+      console.log("✅ Qwen previously approved, preloading as backup...");
+      setTimeout(() => {
+        loadingPromises.push(
+          loadModelInBackground('qwen').then(success => {
+            console.log(success ? "✅ Qwen backup preloaded!" : "⚠️ Qwen backup failed");
+            return success;
+          })
+        );
+      }, 5000);
+    } else {
+      console.log("⏳ Qwen requires user consent, skipping background load");
+    }
     
-  } else if (bestModel === 'qwen') {
-    // Mid-range device: Load Qwen first, then DistilBERT
-    console.log("💬 Mid-range device detected: Loading Qwen first");
-    loadingPromises.push(
-      loadModelInBackground('qwen').then(success => {
-        console.log(success ? "✅ Qwen preloaded!" : "❌ Qwen failed, will fallback");
-        return success;
-      })
-    );
-    
-    // Preload DistilBERT as backup
+    // Always preload DistilBERT as it's free and small
     setTimeout(() => {
       loadingPromises.push(
         loadModelInBackground('distilbert').then(success => {
@@ -1489,11 +1492,35 @@ export async function startBackgroundLoading(): Promise<void> {
           return success;
         })
       );
-    }, 3000); // Start DistilBERT 3 seconds after Qwen
+    }, 2000);
+    
+  } else if (bestModel === 'qwen') {
+    // Mid-range device: Check Qwen consent, always load DistilBERT
+    console.log("💬 Mid-range device detected: Checking consent for Qwen");
+    
+    if (hasUserApprovedDownload('qwen')) {
+      console.log("✅ Qwen previously approved, preloading...");
+      loadingPromises.push(
+        loadModelInBackground('qwen').then(success => {
+          console.log(success ? "✅ Qwen preloaded!" : "❌ Qwen failed, will fallback");
+          return success;
+        })
+      );
+    } else {
+      console.log("⏳ Qwen requires user consent, skipping background load");
+    }
+    
+    // Always preload DistilBERT as backup (no consent needed)
+    loadingPromises.push(
+      loadModelInBackground('distilbert').then(success => {
+        console.log(success ? "✅ DistilBERT preloaded!" : "❌ DistilBERT failed");
+        return success;
+      })
+    );
     
   } else {
-    // Low-end device or iOS: Load DistilBERT only
-    console.log("❓ Low-end/mobile device detected: Loading DistilBERT only");
+    // Low-end device or iOS: Only load DistilBERT (no consent needed)
+    console.log("📱 Low-end/mobile device detected: Loading DistilBERT only");
     loadingPromises.push(
       loadModelInBackground('distilbert').then(success => {
         console.log(success ? "✅ DistilBERT preloaded!" : "❌ DistilBERT failed");
