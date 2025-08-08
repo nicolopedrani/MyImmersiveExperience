@@ -60,12 +60,17 @@ function canRunModel(modelKey: string): { canRun: boolean; reason?: string; sugg
     return { canRun: false, reason: "Model not found" };
   }
 
-  // iOS devices always use fallback
+  // Pre-written responses are always available
+  if (modelKey === 'prewritten') {
+    return { canRun: true };
+  }
+
+  // iOS devices cannot run AI models
   if (isIOSDevice()) {
     return { 
       canRun: false, 
-      reason: "iOS Safari compatibility", 
-      suggestion: "Using smart fallback responses instead" 
+      reason: "iOS devices have Transformers.js compatibility issues", 
+      suggestion: "Use pre-written responses or desktop browser for AI features" 
     };
   }
 
@@ -95,18 +100,24 @@ function canRunModel(modelKey: string): { canRun: boolean; reason?: string; sugg
 }
 
 function getBestModelForDevice(): string {
-  // Try models in order of preference/capability
+  // This function is used ONLY for recommendations, not auto-switching
+  // For iOS or incompatible devices, recommend prewritten
+  if (isIOSDevice()) {
+    return 'prewritten';
+  }
+  
+  // Try AI models in order of preference/capability for recommendation
   const modelPriority = ['phi3', 'qwen', 'distilbert'];
   
   for (const modelKey of modelPriority) {
     const capability = canRunModel(modelKey);
     if (capability.canRun) {
-      return modelKey;
+      return modelKey; // This is just a recommendation, not auto-selection
     }
   }
   
-  // Fallback to smallest model
-  return 'distilbert';
+  // Final recommendation: pre-written responses
+  return 'prewritten';
 }
 
 function getModelCapabilityInfo(modelKey: string): string {
@@ -203,6 +214,7 @@ let progressUpdateCallback:
 // Background preloading system
 let preloadedModels: { [key: string]: any } = {};
 let backgroundLoadingStatus: { [key: string]: 'pending' | 'loading' | 'completed' | 'error' } = {
+  prewritten: 'completed', // Pre-written responses are always ready
   distilbert: 'pending',
   qwen: 'pending',
   phi3: 'pending'
@@ -225,6 +237,14 @@ let backgroundProgressCallback: ((modelKey: string, status: string, progress?: n
 
 // Available AI models - both Q&A and chat models
 const AI_MODELS: { [key: string]: any } = {
+  prewritten: {
+    name: "Pre-Written Responses",
+    description: "Instant, reliable responses based on CV content",
+    size: "0MB",
+    type: "fallback",
+    minMemoryGB: 0,
+    recommendedWebGPU: false,
+  },
   distilbert: {
     name: "Xenova/distilbert-base-cased-distilled-squad",
     description: "DistilBERT model optimized for question-answering",
@@ -257,8 +277,8 @@ const AI_MODELS: { [key: string]: any } = {
 
 // Configuration - using @huggingface/transformers v3 with CDN
 const MODEL_CONFIG = {
-  preferredModel: "distilbert", // Start with smaller model for testing
-  fallbackModels: ["distilbert"],
+  preferredModel: "prewritten", // Default to pre-written for all devices
+  fallbackModels: ["prewritten", "distilbert"],
   enableModelFallback: true,
   useOnlyFallback: false, // Try to load real AI models
 };
@@ -633,58 +653,28 @@ What is your name?<|im_end|>
 
 export async function initializeAI(): Promise<boolean> {
   try {
-    console.log("🔧 Checking AI system initialization...");
+    console.log("🔧 Initializing AI system with pre-written responses...");
     
-    // Force fallback mode for iOS devices due to known Safari compatibility issues
-    if (isIOSDevice()) {
-      console.log("🍎 iOS device detected - disabling AI models due to Safari ONNX Runtime issues");
-      isModelLoaded = false;
-      currentModelName = "iOS Fallback System";
-      currentModelType = "fallback";
-      console.log("✅ iOS fallback system initialized successfully!");
-      return true;
-    }
-
-    // Skip AI loading if configured for fallback only
-    if (MODEL_CONFIG.useOnlyFallback) {
-      console.log("🔄 Using fallback responses only (AI models disabled)");
-      isModelLoaded = false;
-      currentModelName = "Fallback System";
-      currentModelType = "fallback";
-      console.log("✅ Fallback system initialized successfully!");
-      return true;
-    }
-
-    // Check if we have preloaded models available
-    const defaultModel = MODEL_CONFIG.preferredModel;
+    // EVERYONE starts with pre-written responses (user-driven upgrades only)
+    console.log("🔄 Starting with pre-written responses - AI models load only when user selects them");
+    isModelLoaded = true; // Pre-written responses are always "loaded"
+    currentModelName = "prewritten (Pre-Written Responses)";
+    currentModelType = "fallback";
+    aiPipeline = null; // No AI pipeline needed for pre-written responses
     
-    if (preloadedModels[defaultModel] && backgroundLoadingStatus[defaultModel] === 'completed') {
-      console.log(`⚡ Using preloaded ${defaultModel} model for initialization!`);
-      
-      // Use the preloaded model
-      aiPipeline = preloadedModels[defaultModel].pipeline;
-      currentModelName = `${defaultModel} (${preloadedModels[defaultModel].modelInfo.name})`;
-      currentModelType = preloadedModels[defaultModel].modelInfo.type;
-      isModelLoaded = true;
-      
-      console.log(`✅ AI system ready with preloaded ${defaultModel}!`);
-      console.log(`📋 Active model: ${currentModelName}`);
-      return true;
-    } else {
-      // Fallback to traditional loading if no preloaded model is available
-      console.log(`🔄 No preloaded models available, using fallback responses for now`);
-      isModelLoaded = false;
-      currentModelName = "Loading in background...";
-      currentModelType = "fallback";
-      return true; // Return true so conversation system still works
-    }
+    console.log("✅ Pre-written response system ready!");
+    console.log("📋 Active model: Pre-Written Responses");
+    console.log("💡 AI models will load when user explicitly selects them");
+    
+    return true;
   } catch (error) {
     console.error("💥 AI initialization error:", error);
-    console.log("🔄 Falling back to scripted responses");
-    isModelLoaded = false;
-    currentModelName = "Fallback System";
+    console.log("🔄 Falling back to pre-written responses");
+    isModelLoaded = true;
+    currentModelName = "prewritten (Pre-Written Responses)";
     currentModelType = "fallback";
-    return true; // Return true so conversation system still works
+    aiPipeline = null;
+    return true;
   }
 }
 
@@ -733,7 +723,17 @@ export async function switchModel(modelKey: string): Promise<boolean> {
     return false;
   }
 
-  // Check device compatibility
+  // Handle pre-written responses (always available)
+  if (modelKey === 'prewritten') {
+    console.log('🔄 Switching to pre-written responses mode');
+    currentModelName = "prewritten (Pre-Written Responses)";
+    currentModelType = "fallback";
+    isModelLoaded = true;
+    aiPipeline = null; // No AI pipeline needed for pre-written
+    return true;
+  }
+
+  // Check device compatibility for AI models
   const capability = canRunModel(modelKey);
   if (!capability.canRun) {
     console.warn(`⚠️ Cannot run ${modelKey}: ${capability.reason}`);
@@ -821,6 +821,12 @@ export async function answerQuestion(question: string): Promise<string> {
 
     if (!relevantContext) {
       return "I'd be happy to answer questions about my professional experience, skills, projects, or background. Could you please ask something more specific about my CV or career?";
+    }
+
+    // Check if we're using pre-written responses (no AI pipeline)
+    if (currentModelType === "fallback" || !aiPipeline) {
+      console.log("🔄 Using pre-written fallback response");
+      return getBrowserSpecificFallbackResponse(question);
     }
 
     // Use the appropriate pipeline based on model type
@@ -1424,112 +1430,14 @@ export function initializeDownloadState(modelKey: string, userRequested: boolean
 }
 
 export async function startBackgroundLoading(): Promise<void> {
-  if (!transformersModule) {
-    console.log("🔧 Loading Transformers.js before starting background loading...");
-    try {
-      transformersModule = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1");
-      console.log("✅ Transformers.js loaded for background loading");
-      
-      // Configure environment
-      if (transformersModule.env) {
-        transformersModule.env.allowRemoteModels = true;
-        transformersModule.env.allowLocalModels = false;
-        transformersModule.env.useBrowserCache = true;
-      }
-    } catch (error) {
-      console.error("❌ Failed to load transformers for background loading:", error);
-      return;
-    }
-  }
-
-  console.log("🚀 Starting intelligent background model preloading...");
+  console.log("🚀 Background loading disabled - AI models load only when user selects them");
+  console.log("💡 This prevents performance impact during app startup");
+  console.log("📋 Users start with instant pre-written responses");
+  console.log("🎯 AI models will download when user explicitly chooses them in dropdown");
   
-  // Determine optimal loading strategy based on device capabilities
-  const bestModel = getBestModelForDevice();
-  console.log(`🎯 Device analysis: Best model is ${bestModel}`);
-  
-  // Always start with the best model for this device
-  const loadingPromises: Promise<boolean>[] = [];
-  
-  // Only preload models that don't require consent or have already been approved
-  if (bestModel === 'phi3') {
-    // High-end device: Only load approved models
-    console.log("🧠 High-end device detected: Checking consent for large models");
-    
-    // Check if Phi-3 has been approved by user
-    if (hasUserApprovedDownload('phi3')) {
-      console.log("✅ Phi-3 previously approved, preloading...");
-      loadingPromises.push(
-        loadModelInBackground('phi3').then(success => {
-          console.log(success ? "✅ Phi-3 preloaded!" : "❌ Phi-3 failed, will fallback");
-          return success;
-        })
-      );
-    } else {
-      console.log("⏳ Phi-3 requires user consent, skipping background load");
-    }
-
-    // Check if Qwen has been approved by user
-    if (hasUserApprovedDownload('qwen')) {
-      console.log("✅ Qwen previously approved, preloading as backup...");
-      setTimeout(() => {
-        loadingPromises.push(
-          loadModelInBackground('qwen').then(success => {
-            console.log(success ? "✅ Qwen backup preloaded!" : "⚠️ Qwen backup failed");
-            return success;
-          })
-        );
-      }, 5000);
-    } else {
-      console.log("⏳ Qwen requires user consent, skipping background load");
-    }
-    
-    // Always preload DistilBERT as it's free and small
-    setTimeout(() => {
-      loadingPromises.push(
-        loadModelInBackground('distilbert').then(success => {
-          console.log(success ? "✅ DistilBERT backup preloaded!" : "⚠️ DistilBERT backup failed");
-          return success;
-        })
-      );
-    }, 2000);
-    
-  } else if (bestModel === 'qwen') {
-    // Mid-range device: Check Qwen consent, always load DistilBERT
-    console.log("💬 Mid-range device detected: Checking consent for Qwen");
-    
-    if (hasUserApprovedDownload('qwen')) {
-      console.log("✅ Qwen previously approved, preloading...");
-      loadingPromises.push(
-        loadModelInBackground('qwen').then(success => {
-          console.log(success ? "✅ Qwen preloaded!" : "❌ Qwen failed, will fallback");
-          return success;
-        })
-      );
-    } else {
-      console.log("⏳ Qwen requires user consent, skipping background load");
-    }
-    
-    // Always preload DistilBERT as backup (no consent needed)
-    loadingPromises.push(
-      loadModelInBackground('distilbert').then(success => {
-        console.log(success ? "✅ DistilBERT preloaded!" : "❌ DistilBERT failed");
-        return success;
-      })
-    );
-    
-  } else {
-    // Low-end device or iOS: Only load DistilBERT (no consent needed)
-    console.log("📱 Low-end/mobile device detected: Loading DistilBERT only");
-    loadingPromises.push(
-      loadModelInBackground('distilbert').then(success => {
-        console.log(success ? "✅ DistilBERT preloaded!" : "❌ DistilBERT failed");
-        return success;
-      })
-    );
-  }
-  
-  // Don't auto-switch to Phi-3 during background loading 
-  // Let user manually choose when they want to use it
-  console.log(`💡 Background loading started. User can manually switch to ${bestModel} when ready.`);
+  // No background loading - user-driven only!
+  // This prevents:
+  // 1. Heavy downloads impacting startup performance
+  // 2. Automatic consent dialogs appearing
+  // 3. Memory usage from loaded models user didn't request
 }
