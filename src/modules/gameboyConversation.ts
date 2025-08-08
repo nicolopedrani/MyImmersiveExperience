@@ -2,6 +2,8 @@
 
 import { answerQuestion, switchModel, getCurrentModelKey, canRunModel, getModelCapabilityInfo, getModelDownloadState, isUserRequestedDownload, hasUserRequestedModel } from "./aiProcessor";
 import { hasUserApprovedDownload } from "./modelConsent";
+import { compatibilityWarningManager } from './compatibilityWarning';
+import { getBrowserInfo, getCompatibilityInfo } from './browserDetection';
 
 interface ConversationState {
   isActive: boolean;
@@ -206,8 +208,17 @@ class GameBoyConversation {
     });
   }
 
-  public showConversation(): void {
+  public async showConversation(): Promise<void> {
     if (!this.messageArea) return;
+
+    // Check if we should show compatibility warning first
+    if (compatibilityWarningManager.shouldShowWarning()) {
+      try {
+        await compatibilityWarningManager.showCompatibilityWarning();
+      } catch (error) {
+        console.log('Compatibility warning skipped or closed:', error);
+      }
+    }
 
     this.state.isActive = true;
     this.state.currentState = 'input';
@@ -216,10 +227,8 @@ class GameBoyConversation {
     this.messageArea.style.display = 'block';
     this.messageArea.style.height = '150px';
 
-    // Update model selector
-    if (this.modelSelector) {
-      this.modelSelector.value = getCurrentModelKey();
-    }
+    // Update model selector with browser compatibility information
+    this.updateModelSelector();
 
     // Show input elements immediately (no delay for smooth interaction)
     if (this.modelSelector) this.modelSelector.style.opacity = '1';
@@ -333,22 +342,61 @@ class GameBoyConversation {
   private updateModelSelector(): void {
     if (!this.modelSelector) return;
 
+    const compatInfo = getCompatibilityInfo();
+    const browserInfo = getBrowserInfo();
+    
     const models = [
-      { key: 'distilbert', icon: '❓', name: 'DistilBERT Q&A', size: '65MB' },
-      { key: 'qwen', icon: '💬', name: 'Qwen Chat', size: '500MB' },
-      { key: 'phi3', icon: '🧠', name: 'Phi-3 Advanced', size: '1.8GB', badge: 'NEW!' }
+      { key: 'distilbert', icon: '🚀', name: 'DistilBERT Q&A', size: '65MB', description: 'Fast responses' },
+      { key: 'qwen', icon: '💬', name: 'Qwen Chat', size: '500MB', description: 'Conversational AI' },
+      { key: 'phi3', icon: '🧠', name: 'Phi-3 Advanced', size: '1.8GB', description: 'Premium experience' }
     ];
 
+    // Set current model as default
+    this.modelSelector.value = getCurrentModelKey();
+
     this.modelSelector.innerHTML = models.map(model => {
-      const capability = canRunModel(model.key);
-      const disabled = !capability.canRun;
-      const badge = model.badge ? ` ⭐${model.badge}` : '';
-      const warning = disabled && capability.reason ? ` (${capability.reason})` : '';
+      const isSupported = compatInfo.aiSupport[model.key as keyof typeof compatInfo.aiSupport];
+      const isRecommended = compatInfo.recommendedModel === model.key;
       
-      return `<option value="${model.key}" ${disabled ? 'disabled' : ''}>
-        ${model.icon} ${model.name} (${model.size})${badge}${warning}
+      let statusText = '';
+      if (!isSupported) {
+        if (model.key === 'phi3' && browserInfo.isMobile) {
+          statusText = ' - Desktop only';
+        } else if (browserInfo.os === 'iOS' && browserInfo.name === 'Safari') {
+          statusText = ' - Not compatible with iOS Safari';
+        } else {
+          statusText = ' - Limited compatibility';
+        }
+      } else if (isRecommended) {
+        statusText = ' - Recommended';
+      }
+      
+      const optionText = `${model.icon} ${model.name} (${model.size}) - ${model.description}${statusText}`;
+      
+      return `<option value="${model.key}" ${!isSupported ? 'disabled' : ''}>
+        ${optionText}
       </option>`;
     }).join('');
+    
+    // Make sure current selection is valid
+    const currentModel = getCurrentModelKey();
+    if (this.modelSelector.querySelector(`option[value="${currentModel}"]`)) {
+      this.modelSelector.value = currentModel;
+    } else {
+      // Fallback to recommended model if current is not available
+      this.modelSelector.value = compatInfo.recommendedModel;
+    }
+    
+    // Add mobile-specific improvements for the dropdown
+    if (browserInfo.isMobile) {
+      this.modelSelector.style.fontSize = '16px'; // Prevent zoom on iOS
+      this.modelSelector.style.userSelect = 'none';
+      this.modelSelector.style.webkitUserSelect = 'none';
+      
+      // Add touch-friendly styling
+      this.modelSelector.style.minHeight = '44px'; // iOS recommended touch target
+      this.modelSelector.style.padding = '12px 8px';
+    }
   }
 
   private async handleModelChange(): Promise<void> {

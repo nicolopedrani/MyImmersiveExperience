@@ -25,14 +25,14 @@ let currentModelType = "";
 // CDN-based transformers.js loading  
 let transformersModule: any = null;
 
-// Mobile device detection for iOS Safari compatibility
-function isMobileDevice(): boolean {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-
-function isIOSDevice(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-}
+// Import enhanced browser detection
+import { 
+  getBrowserInfo, 
+  getCompatibilityInfo, 
+  isIOSDevice, 
+  isMobileDevice, 
+  supportsAI 
+} from './browserDetection';
 
 // Enhanced device capability detection for Phi-3 requirements
 function getDeviceMemoryGB(): number {
@@ -131,37 +131,61 @@ function getModelCapabilityInfo(modelKey: string): string {
   return parts.join(' • ');
 }
 
-// iOS-specific fallback responses due to Safari compatibility issues
-function getIOSFallbackResponse(question: string): string {
+// Browser-specific fallback responses based on compatibility
+function getBrowserSpecificFallbackResponse(question: string): string {
+  const browserInfo = getBrowserInfo();
+  const compatInfo = getCompatibilityInfo();
   const lowerQ = question.toLowerCase();
+  
+  // Generate context-aware responses based on question type
+  let contextResponse = "";
   
   // Greeting responses
   if (lowerQ.includes('hi') || lowerQ.includes('hello') || lowerQ.includes('ciao')) {
-    return "Hi there! I'm Nicolo Pedrani. Welcome to my interactive CV! I'm a Data Scientist at Deloitte Consulting and former R&D System Engineer. What would you like to know about my experience?";
+    contextResponse = "Hi there! I'm Nicolo Pedrani. Welcome to my interactive CV! I'm a Data Scientist at Deloitte Consulting and former R&D System Engineer. What would you like to know about my experience?";
   }
-  
   // Experience-related questions
-  if (lowerQ.includes('experience') || lowerQ.includes('work') || lowerQ.includes('job')) {
-    return "I currently work as a Data Scientist at Deloitte Consulting, focusing on business analytics, machine learning, and client solutions. Previously, I was an R&D System Engineer at Leonardo SpA, working on defense systems and infrared technologies.";
+  else if (lowerQ.includes('experience') || lowerQ.includes('work') || lowerQ.includes('job')) {
+    contextResponse = "I currently work as a Data Scientist at Deloitte Consulting, focusing on business analytics, machine learning, and client solutions. Previously, I was an R&D System Engineer at Leonardo SpA, working on defense systems and infrared technologies.";
   }
-  
   // Skills questions
-  if (lowerQ.includes('skill') || lowerQ.includes('technology') || lowerQ.includes('programming')) {
-    return "My key skills include Python, R, machine learning, PyTorch, scikit-learn, Power BI, Azure ML, and statistical analysis. I also have experience with MATLAB, Simulink, and system engineering from my defense industry background.";
+  else if (lowerQ.includes('skill') || lowerQ.includes('technology') || lowerQ.includes('programming')) {
+    contextResponse = "My key skills include Python, R, machine learning, PyTorch, scikit-learn, Power BI, Azure ML, and statistical analysis. I also have experience with MATLAB, Simulink, and system engineering from my defense industry background.";
   }
-  
   // Education questions  
-  if (lowerQ.includes('education') || lowerQ.includes('study') || lowerQ.includes('university')) {
-    return "I have a strong educational background in engineering and data science, which has equipped me with both theoretical knowledge and practical problem-solving skills across multiple domains.";
+  else if (lowerQ.includes('education') || lowerQ.includes('study') || lowerQ.includes('university')) {
+    contextResponse = "I have a strong educational background in engineering and data science, which has equipped me with both theoretical knowledge and practical problem-solving skills across multiple domains.";
   }
-  
   // Projects questions
-  if (lowerQ.includes('project') || lowerQ.includes('achievement')) {
-    return "I've worked on diverse projects including NPS analysis, energy cost optimization, fashion retail forecasting, recommendation systems, infrared detection systems, and missile warning technologies. Each project combined technical innovation with real business impact.";
+  else if (lowerQ.includes('project') || lowerQ.includes('achievement')) {
+    contextResponse = "I've worked on diverse projects including NPS analysis, energy cost optimization, fashion retail forecasting, recommendation systems, infrared detection systems, and missile warning technologies. Each project combined technical innovation with real business impact.";
+  }
+  // Default context
+  else {
+    contextResponse = "I'm Nicolo Pedrani - a Data Scientist at Deloitte with R&D experience at Leonardo SpA. I specialize in machine learning, business analytics, and defense systems. What specific aspect would you like to know more about?";
   }
   
-  // Default response
-  return "Thanks for your question! Due to iOS Safari compatibility limitations, I'm using simplified responses. I'm Nicolo Pedrani - a Data Scientist at Deloitte with R&D experience at Leonardo SpA. I specialize in machine learning, business analytics, and defense systems. What specific aspect would you like to know more about?";
+  // Add browser-specific explanation
+  let explanation = "";
+  
+  if (browserInfo.os === 'iOS' && browserInfo.name === 'Safari') {
+    explanation = "I'm using pre-written responses because iOS Safari has known compatibility issues with AI models. ";
+  } else if (browserInfo.isMobile && browserInfo.name === 'Chrome') {
+    explanation = "I'm using simplified responses on Chrome mobile for better performance. ";
+  } else if (browserInfo.isMobile && browserInfo.name === 'Firefox') {
+    explanation = "I'm using basic responses optimized for Firefox mobile. ";
+  } else if (browserInfo.isMobile) {
+    explanation = `I'm using simplified responses optimized for ${browserInfo.name} mobile. `;
+  } else {
+    explanation = "I'm using fallback responses due to AI system limitations. ";
+  }
+  
+  return explanation + contextResponse;
+}
+
+// Legacy function for backwards compatibility - now uses browser-specific logic
+function getIOSFallbackResponse(question: string): string {
+  return getBrowserSpecificFallbackResponse(question);
 }
 
 // Progress tracking callback for UI updates
@@ -773,7 +797,7 @@ export async function answerQuestion(question: string): Promise<string> {
       return getIOSFallbackResponse(question);
     }
 
-    // Enhanced mobile error handling
+    // Enhanced browser-specific error handling
     if (!aiPipeline || !isModelLoaded) {
       console.log("🔄 AI pipeline not ready, attempting to initialize...");
       const initialized = await initializeAI().catch(err => {
@@ -781,10 +805,8 @@ export async function answerQuestion(question: string): Promise<string> {
         return false;
       });
       if (!initialized) {
-        if (isMobileDevice()) {
-          return "I'm sorry, AI processing isn't fully supported on mobile devices yet. Here are some key highlights from my experience: I'm a Data Scientist at Deloitte with expertise in Python, machine learning, and business analytics. I also have R&D experience in defense systems at Leonardo SpA. Feel free to ask specific questions!";
-        }
-        return "I'm sorry, the AI system is currently unavailable on this device. Please try again or switch to desktop.";
+        // Use browser-specific messaging instead of generic mobile message
+        return getBrowserSpecificFallbackResponse(question);
       }
     }
 
@@ -1228,33 +1250,46 @@ const responseVariations = {
 
 export function getFallbackResponse(question: string): string {
   const questionLower = question.toLowerCase();
+  
+  // Get browser information for context-aware messaging
+  const browserInfo = getBrowserInfo();
+  let browserContext = "";
+  
+  // Add browser-specific context if this is a fallback due to browser limitations
+  if (browserInfo.os === 'iOS' && browserInfo.name === 'Safari') {
+    browserContext = "[iOS Safari compatibility mode] ";
+  } else if (browserInfo.isMobile && browserInfo.name === 'Chrome') {
+    browserContext = "[Chrome mobile optimized] ";
+  } else if (browserInfo.isMobile) {
+    browserContext = `[${browserInfo.name} mobile mode] `;
+  }
 
   // Use varied responses for common topics
   if (questionLower.includes("deloitte")) {
     const responses = responseVariations.deloitte;
-    return responses[Math.floor(Math.random() * responses.length)];
+    return browserContext + responses[Math.floor(Math.random() * responses.length)];
   } else if (questionLower.includes("leonardo")) {
     const responses = responseVariations.leonardo;
-    return responses[Math.floor(Math.random() * responses.length)];
+    return browserContext + responses[Math.floor(Math.random() * responses.length)];
   } else if (
     questionLower.includes("skill") ||
     questionLower.includes("technology")
   ) {
     const responses = responseVariations.skills;
-    return responses[Math.floor(Math.random() * responses.length)];
+    return browserContext + responses[Math.floor(Math.random() * responses.length)];
   } else if (
     questionLower.includes("football") ||
     questionLower.includes("soccer")
   ) {
     const responses = responseVariations.football;
-    return responses[Math.floor(Math.random() * responses.length)];
+    return browserContext + responses[Math.floor(Math.random() * responses.length)];
   } else if (
     questionLower.includes("travel") ||
     questionLower.includes("country") ||
     questionLower.includes("visit")
   ) {
     const responses = responseVariations.travel;
-    return responses[Math.floor(Math.random() * responses.length)];
+    return browserContext + responses[Math.floor(Math.random() * responses.length)];
   }
 
   // Single responses for less common topics
@@ -1262,25 +1297,25 @@ export function getFallbackResponse(question: string): string {
     questionLower.includes("experience") ||
     questionLower.includes("work")
   ) {
-    return "I have experience in both Data Science consulting at Deloitte and R&D System Engineering at Leonardo SpA. I've worked on projects ranging from business analytics and machine learning to infrared defense systems and computer vision.";
+    return browserContext + "I have experience in both Data Science consulting at Deloitte and R&D System Engineering at Leonardo SpA. I've worked on projects ranging from business analytics and machine learning to infrared defense systems and computer vision.";
   } else if (
     questionLower.includes("reading") ||
     questionLower.includes("book")
   ) {
-    return "I'm an avid reader who enjoys both technical literature and business books. Reading helps me stay current with industry trends and broaden my perspective beyond just technical topics.";
+    return browserContext + "I'm an avid reader who enjoys both technical literature and business books. Reading helps me stay current with industry trends and broaden my perspective beyond just technical topics.";
   } else if (
     questionLower.includes("hobby") ||
     questionLower.includes("personal") ||
     questionLower.includes("interest")
   ) {
-    return "My main hobbies are football, traveling, and reading. These interests have shaped me both personally and professionally - football taught me teamwork, travel gave me cultural awareness, and reading keeps me intellectually curious.";
+    return browserContext + "My main hobbies are football, traveling, and reading. These interests have shaped me both personally and professionally - football taught me teamwork, travel gave me cultural awareness, and reading keeps me intellectually curious.";
   } else if (
     questionLower.includes("culture") ||
     questionLower.includes("international")
   ) {
-    return "My international travel experiences have given me a global perspective that's valuable in today's interconnected world. I've experienced everything from the tech innovation in Japan to the rich history of Morocco.";
+    return browserContext + "My international travel experiences have given me a global perspective that's valuable in today's interconnected world. I've experienced everything from the tech innovation in Japan to the rich history of Morocco.";
   } else {
-    return "I'm a professional with diverse experience in data science consulting and R&D engineering. Feel free to ask about my work at Deloitte, Leonardo SpA, my technical skills, my hobbies, or my travel experiences!";
+    return browserContext + "I'm a professional with diverse experience in data science consulting and R&D engineering. Feel free to ask about my work at Deloitte, Leonardo SpA, my technical skills, my hobbies, or my travel experiences!";
   }
 }
 

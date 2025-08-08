@@ -5,11 +5,12 @@ import { MAP_WIDTH_TILES, MAP_HEIGHT_TILES } from "./modules/map";
 import { player, updatePlayerAnimation, drawPlayer } from "./modules/player";
 import { setupInputListeners, setupTouchControls } from "./modules/input";
 import { setupCanvas, scaleCanvasToWindow } from "./modules/canvas";
-import { getCurrentRoom, initializeRoomSystem } from "./modules/roomManager";
+import { getCurrentRoom, initializeRoomSystem, updateStatusBar } from "./modules/roomManager";
 import { initializeBossInteraction, checkBossProximity } from "./modules/bossInteraction";
 import { answerQuestion, getFallbackResponse, isAIReady, switchModel, getCurrentModelKey, setProgressUpdateCallback, startBackgroundLoading, setBackgroundProgressCallback } from "./modules/aiProcessor";
 import { gameBoyConversation } from "./modules/gameboyConversation";
 import { initializeDesktopControls } from "./modules/desktopControls";
+import { directionalSignalManager } from "./modules/directionalSignals";
 
 // --- Setup canvas ---
 const dummyMap = Array(MAP_HEIGHT_TILES)
@@ -80,6 +81,16 @@ function gameLoop(currentTime: number): void {
 
   // Update
   updatePlayerAnimation(deltaTime);
+  
+  // Update directional signals
+  const currentRoom = getCurrentRoom();
+  directionalSignalManager.update(deltaTime, player.x, player.y, currentRoom.id);
+  
+  // Update status bar with directional signal information
+  const nearestSignal = directionalSignalManager.getNearestSignal(player.x, player.y, currentRoom.id);
+  if (nearestSignal) {
+    updateStatusBar(`${nearestSignal.icon} ${nearestSignal.roomName} - ${nearestSignal.description}`, 100); // Short duration for frequent updates
+  }
   
   // Check boss proximity (only if conversation is not active)
   if (!gameBoyConversation.isConversationActive()) {
@@ -649,6 +660,9 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
       }
     }
   }
+
+  // Draw directional signals (before player so player appears on top)
+  directionalSignalManager.render(ctx, tileSize, currentRoom.id);
 
   // Draw player
   drawPlayer(ctx, tileSize);
