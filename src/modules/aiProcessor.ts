@@ -1,6 +1,10 @@
 // modules/aiProcessor.ts - AI processing with Transformers.js v3 CDN integration
 
-import { requestModelConsent, hasUserConsentFor, hasUserApprovedDownload } from "./modelConsent";
+import {
+  requestModelConsent,
+  hasUserConsentFor,
+  hasUserApprovedDownload,
+} from "./modelConsent";
 
 declare global {
   interface Window {
@@ -22,76 +26,112 @@ let isModelLoaded = false;
 let currentModelName = "";
 let currentModelType = "";
 
-// CDN-based transformers.js loading  
+// CDN-based transformers.js loading
 let transformersModule: any = null;
 
+// Initialize transformers.js from CDN using ES module import (your documented approach)
+async function initializeTransformers(): Promise<void> {
+  if (transformersModule) return; // Already loaded
+
+  try {
+    console.log("📦 Loading Transformers.js from CDN...");
+
+    // Use ES module dynamic import (matches your TECHNICAL-STRATEGY.md)
+    const { pipeline, env } = await import(
+      "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1"
+    );
+
+    // Configure environment for static sites (from your EXAMPLES_USAGE.md)
+    env.allowRemoteModels = true;
+    env.allowLocalModels = false;
+
+    // Phi-3 specific configuration from working examples
+    env.backends.onnx.wasm.proxy = false;
+    env.backends.onnx.wasm.numThreads = 1; // Disable multithreading (known bug)
+
+    transformersModule = { pipeline };
+
+    console.log("✅ Transformers.js loaded successfully");
+  } catch (error) {
+    console.error("❌ Failed to load transformers.js:", error);
+    throw error;
+  }
+}
+
 // Import enhanced browser detection
-import { 
-  getBrowserInfo, 
-  getCompatibilityInfo, 
-  isIOSDevice, 
-  isMobileDevice, 
-  supportsAI 
-} from './browserDetection';
+import {
+  getBrowserInfo,
+  getCompatibilityInfo,
+  isIOSDevice,
+  isMobileDevice,
+  supportsAI,
+} from "./browserDetection";
 
 // Enhanced device capability detection for Phi-3 requirements
 function getDeviceMemoryGB(): number {
   // Use Device Memory API if available, otherwise estimate
-  if ('deviceMemory' in navigator) {
+  if ("deviceMemory" in navigator) {
     return (navigator as any).deviceMemory;
   }
-  
+
   // Fallback estimation based on user agent and other factors
   if (isMobileDevice()) {
     return 2; // Conservative mobile estimate
   }
-  
+
   // Desktop estimation - default to 4GB if unknown
   return 4;
 }
 
 function hasWebGPUSupport(): boolean {
-  return 'gpu' in navigator;
+  return "gpu" in navigator;
 }
 
-function canRunModel(modelKey: string): { canRun: boolean; reason?: string; suggestion?: string } {
+function canRunModel(modelKey: string): {
+  canRun: boolean;
+  reason?: string;
+  suggestion?: string;
+} {
   const model = AI_MODELS[modelKey];
   if (!model) {
     return { canRun: false, reason: "Model not found" };
   }
 
   // Pre-written responses are always available
-  if (modelKey === 'prewritten') {
+  if (modelKey === "prewritten") {
     return { canRun: true };
   }
 
   // iOS devices cannot run AI models
   if (isIOSDevice()) {
-    return { 
-      canRun: false, 
-      reason: "iOS devices have Transformers.js compatibility issues", 
-      suggestion: "Use pre-written responses or desktop browser for AI features" 
+    return {
+      canRun: false,
+      reason: "iOS devices have Transformers.js compatibility issues",
+      suggestion:
+        "Use pre-written responses or desktop browser for AI features",
     };
   }
 
   // Check memory requirements
   const availableMemory = getDeviceMemoryGB();
   if (availableMemory < model.minMemoryGB) {
-    return { 
-      canRun: false, 
+    return {
+      canRun: false,
       reason: `Requires ${model.minMemoryGB}GB RAM, detected ${availableMemory}GB`,
-      suggestion: `Try ${model.minMemoryGB <= 2 ? 'DistilBERT' : 'Qwen'} for better performance`
+      suggestion: `Try ${
+        model.minMemoryGB <= 2 ? "DistilBERT" : "Qwen"
+      } for better performance`,
     };
   }
 
   // Check WebGPU for models that strongly benefit from it
   if (model.recommendedWebGPU && !hasWebGPUSupport()) {
     // Phi-3 can still run on WASM but will be slower
-    if (modelKey === 'phi3') {
-      return { 
-        canRun: true, 
+    if (modelKey === "phi3") {
+      return {
+        canRun: true,
         reason: "Will use CPU processing (slower performance)",
-        suggestion: "Use Chrome/Edge for faster WebGPU acceleration"
+        suggestion: "Use Chrome/Edge for faster WebGPU acceleration",
       };
     }
   }
@@ -103,43 +143,40 @@ function getBestModelForDevice(): string {
   // This function is used ONLY for recommendations, not auto-switching
   // For iOS or incompatible devices, recommend prewritten
   if (isIOSDevice()) {
-    return 'prewritten';
+    return "prewritten";
   }
-  
+
   // Try AI models in order of preference/capability for recommendation
-  const modelPriority = ['phi3', 'qwen', 'distilbert'];
-  
+  const modelPriority = ["phi3", "qwen", "distilbert"];
+
   for (const modelKey of modelPriority) {
     const capability = canRunModel(modelKey);
     if (capability.canRun) {
       return modelKey; // This is just a recommendation, not auto-selection
     }
   }
-  
+
   // Final recommendation: pre-written responses
-  return 'prewritten';
+  return "prewritten";
 }
 
 function getModelCapabilityInfo(modelKey: string): string {
   const model = AI_MODELS[modelKey];
   const capability = canRunModel(modelKey);
-  
+
   if (!model) return "Model information not available";
-  
-  const parts = [
-    `📊 ${model.size}`,
-    `🧠 ${model.minMemoryGB}GB RAM required`
-  ];
-  
+
+  const parts = [`📊 ${model.size}`, `🧠 ${model.minMemoryGB}GB RAM required`];
+
   if (model.recommendedWebGPU) {
     parts.push(`⚡ WebGPU recommended`);
   }
-  
+
   if (!capability.canRun && capability.reason) {
     parts.push(`⚠️ ${capability.reason}`);
   }
-  
-  return parts.join(' • ');
+
+  return parts.join(" • ");
 }
 
 // Browser-specific fallback responses based on compatibility
@@ -147,50 +184,74 @@ function getBrowserSpecificFallbackResponse(question: string): string {
   const browserInfo = getBrowserInfo();
   const compatInfo = getCompatibilityInfo();
   const lowerQ = question.toLowerCase();
-  
+
   // Generate context-aware responses based on question type
   let contextResponse = "";
-  
+
   // Greeting responses
-  if (lowerQ.includes('hi') || lowerQ.includes('hello') || lowerQ.includes('ciao')) {
-    contextResponse = "Hi there! I'm Nicolo Pedrani. Welcome to my interactive CV! I'm a Data Scientist at Deloitte Consulting and former R&D System Engineer. What would you like to know about my experience?";
+  if (
+    lowerQ.includes("hi") ||
+    lowerQ.includes("hello") ||
+    lowerQ.includes("ciao")
+  ) {
+    contextResponse =
+      "Hi there! I'm Nicolo Pedrani. Welcome to my interactive CV! I'm a Data Scientist at Deloitte Consulting and former R&D System Engineer. What would you like to know about my experience?";
   }
   // Experience-related questions
-  else if (lowerQ.includes('experience') || lowerQ.includes('work') || lowerQ.includes('job')) {
-    contextResponse = "I currently work as a Data Scientist at Deloitte Consulting, focusing on business analytics, machine learning, and client solutions. Previously, I was an R&D System Engineer at Leonardo SpA, working on defense systems and infrared technologies.";
+  else if (
+    lowerQ.includes("experience") ||
+    lowerQ.includes("work") ||
+    lowerQ.includes("job")
+  ) {
+    contextResponse =
+      "I currently work as a Data Scientist at Deloitte Consulting, focusing on business analytics, machine learning, and client solutions. Previously, I was an R&D System Engineer at Leonardo SpA, working on defense systems and infrared technologies.";
   }
   // Skills questions
-  else if (lowerQ.includes('skill') || lowerQ.includes('technology') || lowerQ.includes('programming')) {
-    contextResponse = "My key skills include Python, R, machine learning, PyTorch, scikit-learn, Power BI, Azure ML, and statistical analysis. I also have experience with MATLAB, Simulink, and system engineering from my defense industry background.";
+  else if (
+    lowerQ.includes("skill") ||
+    lowerQ.includes("technology") ||
+    lowerQ.includes("programming")
+  ) {
+    contextResponse =
+      "My key skills include Python, R, machine learning, PyTorch, scikit-learn, Power BI, Azure ML, and statistical analysis. I also have experience with MATLAB, Simulink, and system engineering from my defense industry background.";
   }
-  // Education questions  
-  else if (lowerQ.includes('education') || lowerQ.includes('study') || lowerQ.includes('university')) {
-    contextResponse = "I have a strong educational background in engineering and data science, which has equipped me with both theoretical knowledge and practical problem-solving skills across multiple domains.";
+  // Education questions
+  else if (
+    lowerQ.includes("education") ||
+    lowerQ.includes("study") ||
+    lowerQ.includes("university")
+  ) {
+    contextResponse =
+      "I have a strong educational background in engineering and data science, which has equipped me with both theoretical knowledge and practical problem-solving skills across multiple domains.";
   }
   // Projects questions
-  else if (lowerQ.includes('project') || lowerQ.includes('achievement')) {
-    contextResponse = "I've worked on diverse projects including NPS analysis, energy cost optimization, fashion retail forecasting, recommendation systems, infrared detection systems, and missile warning technologies. Each project combined technical innovation with real business impact.";
+  else if (lowerQ.includes("project") || lowerQ.includes("achievement")) {
+    contextResponse =
+      "I've worked on diverse projects including NPS analysis, energy cost optimization, fashion retail forecasting, recommendation systems, infrared detection systems, and missile warning technologies. Each project combined technical innovation with real business impact.";
   }
   // Default context
   else {
-    contextResponse = "I'm Nicolo Pedrani - a Data Scientist at Deloitte with R&D experience at Leonardo SpA. I specialize in machine learning, business analytics, and defense systems. What specific aspect would you like to know more about?";
+    contextResponse =
+      "I'm Nicolo Pedrani - a Data Scientist at Deloitte with R&D experience at Leonardo SpA. I specialize in machine learning, business analytics, and defense systems. What specific aspect would you like to know more about?";
   }
-  
+
   // Add browser-specific explanation
   let explanation = "";
-  
-  if (browserInfo.os === 'iOS' && browserInfo.name === 'Safari') {
-    explanation = "I'm using pre-written responses because iOS Safari has known compatibility issues with AI models. ";
-  } else if (browserInfo.isMobile && browserInfo.name === 'Chrome') {
-    explanation = "I'm using simplified responses on Chrome mobile for better performance. ";
-  } else if (browserInfo.isMobile && browserInfo.name === 'Firefox') {
+
+  if (browserInfo.os === "iOS" && browserInfo.name === "Safari") {
+    explanation =
+      "I'm using pre-written responses because iOS Safari has known compatibility issues with AI models. ";
+  } else if (browserInfo.isMobile && browserInfo.name === "Chrome") {
+    explanation =
+      "I'm using simplified responses on Chrome mobile for better performance. ";
+  } else if (browserInfo.isMobile && browserInfo.name === "Firefox") {
     explanation = "I'm using basic responses optimized for Firefox mobile. ";
   } else if (browserInfo.isMobile) {
     explanation = `I'm using simplified responses optimized for ${browserInfo.name} mobile. `;
   } else {
     explanation = "I'm using fallback responses due to AI system limitations. ";
   }
-  
+
   return explanation + contextResponse;
 }
 
@@ -213,27 +274,33 @@ let progressUpdateCallback:
 
 // Background preloading system
 let preloadedModels: { [key: string]: any } = {};
-let backgroundLoadingStatus: { [key: string]: 'pending' | 'loading' | 'completed' | 'error' } = {
-  prewritten: 'completed', // Pre-written responses are always ready
-  distilbert: 'pending',
-  qwen: 'pending',
-  phi3: 'pending'
+let backgroundLoadingStatus: {
+  [key: string]: "pending" | "loading" | "completed" | "error";
+} = {
+  prewritten: "completed", // Pre-written responses are always ready
+  distilbert: "pending",
+  qwen: "pending",
+  phi3: "pending",
 };
 
 // Download state tracking for UI
-let modelDownloadState: { [key: string]: {
-  status: 'not_started' | 'downloading' | 'completed' | 'failed';
-  progress: number;
-  speed: number;
-  bytesDownloaded: number;
-  totalBytes: number;
-  timeRemaining: number;
-  userRequested: boolean; // NEW: Track if user explicitly requested this model
-}} = {};
+let modelDownloadState: {
+  [key: string]: {
+    status: "not_started" | "downloading" | "completed" | "failed";
+    progress: number;
+    speed: number;
+    bytesDownloaded: number;
+    totalBytes: number;
+    timeRemaining: number;
+    userRequested: boolean; // NEW: Track if user explicitly requested this model
+  };
+} = {};
 
 // Track which models user has explicitly requested (separate from background loading)
 let userRequestedModels: Set<string> = new Set();
-let backgroundProgressCallback: ((modelKey: string, status: string, progress?: number) => void) | null = null;
+let backgroundProgressCallback:
+  | ((modelKey: string, status: string, progress?: number) => void)
+  | null = null;
 
 // Available AI models - both Q&A and chat models
 const AI_MODELS: { [key: string]: any } = {
@@ -255,23 +322,25 @@ const AI_MODELS: { [key: string]: any } = {
   },
   qwen: {
     name: "onnx-community/Qwen2.5-0.5B-Instruct",
-    description: "Qwen 2.5 0.5B Instruct - Small conversational language model",
+    description:
+      "Qwen 2.5 0.5B Instruct - ONNX-optimized conversational model (verified working 2024)",
     size: "~500MB",
     type: "chat",
     minMemoryGB: 2,
     recommendedWebGPU: false,
   },
   phi3: {
-    name: "Xenova/Phi-3-mini-4k-instruct",
-    description: "Phi-3 Mini - Advanced 3.8B parameter instruction model",
+    name: "onnx-community/Phi-3.5-mini-instruct-onnx-web",
+    description:
+      "Phi-3.5 Mini - Web-optimized ONNX model (verified working with transformers.js)",
     size: "~1.8GB",
     type: "chat",
     minMemoryGB: 4,
     recommendedWebGPU: true,
     workingExamples: [
-      "https://huggingface.co/spaces/webml-community/phi-3.5-webgpu",
-      "https://github.com/huggingface/transformers.js-examples/tree/main/phi-3.5-webgpu"
-    ]
+      "https://huggingface.co/onnx-community/Phi-3.5-mini-instruct-onnx-web",
+      "https://github.com/huggingface/transformers.js-examples",
+    ],
   },
 };
 
@@ -371,102 +440,124 @@ const cvContext: CVContext = {
 // Background loading function that stores models instead of overwriting aiPipeline
 async function loadModelInBackground(modelKey: string): Promise<boolean> {
   const model = AI_MODELS[modelKey];
-  if (!model || !transformersModule) {
-    console.error(`❌ Model key invalid or transformers not loaded: ${modelKey}`);
-    backgroundLoadingStatus[modelKey] = 'error';
+  if (!model) {
+    console.error(`❌ Invalid model key: ${modelKey}`);
+    backgroundLoadingStatus[modelKey] = "error";
     return false;
+  }
+
+  // Initialize transformers.js if not already loaded
+  if (!transformersModule) {
+    try {
+      await initializeTransformers();
+    } catch (error) {
+      console.error(
+        `❌ Failed to initialize transformers for background loading of ${modelKey}:`,
+        error
+      );
+      backgroundLoadingStatus[modelKey] = "error";
+      return false;
+    }
   }
 
   try {
     console.log(`🔄 Background loading ${modelKey} model: ${model.name}`);
-    backgroundLoadingStatus[modelKey] = 'loading';
-    
+    backgroundLoadingStatus[modelKey] = "loading";
+
     if (backgroundProgressCallback) {
-      backgroundProgressCallback(modelKey, 'loading', 0);
+      backgroundProgressCallback(modelKey, "loading", 0);
     }
 
     // Choose pipeline type based on model type
-    const pipelineType = model.type === "chat" ? "text-generation" : "question-answering";
+    const pipelineType =
+      model.type === "chat" ? "text-generation" : "question-answering";
 
     // Configure options for background loading with Phi-3 specific settings
     const pipelineOptions: any = {
       device: hasWebGPUSupport() && model.recommendedWebGPU ? "webgpu" : "wasm",
-      // Phi-3 specific configuration
-      ...(modelKey === 'phi3' && {
-        dtype: "q4",
-        use_external_data_format: true,
+      // Phi-3 specific configuration (critical for working properly)
+      ...(modelKey === "phi3" && {
+        dtype: "q4f16", // Web-optimized quantization format
+        use_external_data_format: true, // Required for Phi-3
       }),
       progress_callback: (progress: any) => {
         if (progress.status === "downloading") {
           // Since content-length isn't available, we'll use a chunk-based progress estimate
-          const chunkProgress = Math.min(progress.loaded ? Math.floor(progress.loaded / (1024 * 1024)) : 0, 90);
-          console.log(`📥 Background downloading ${modelKey}: ~${chunkProgress}MB loaded...`);
-          
+          const chunkProgress = Math.min(
+            progress.loaded ? Math.floor(progress.loaded / (1024 * 1024)) : 0,
+            90
+          );
+          console.log(
+            `📥 Background downloading ${modelKey}: ~${chunkProgress}MB loaded...`
+          );
+
           // Only update download state if this is a user-requested download
           if (hasUserRequestedModel(modelKey)) {
             updateDownloadState(modelKey, progress);
           }
-          
+
           // Send real progress data to UI if progress dialog is open
           if ((window as any).updateModelProgress) {
             const loaded = progress.loaded || 0;
-            const total = progress.total || (1.8 * 1024 * 1024 * 1024); // 1.8GB estimate if not available
-            
+            const total = progress.total || 1.8 * 1024 * 1024 * 1024; // 1.8GB estimate if not available
+
             (window as any).updateModelProgress({
-              progress: progress.progress || (loaded / total),
+              progress: progress.progress || loaded / total,
               bytesDownloaded: loaded,
-              totalBytes: total
+              totalBytes: total,
             });
           }
-          
+
           if (backgroundProgressCallback) {
-            backgroundProgressCallback(modelKey, 'downloading', chunkProgress);
+            backgroundProgressCallback(modelKey, "downloading", chunkProgress);
           }
         } else if (progress.status === "loading") {
           console.log(`🧠 Loading ${modelKey} model into memory...`);
           if (backgroundProgressCallback) {
-            backgroundProgressCallback(modelKey, 'finalizing', 95);
+            backgroundProgressCallback(modelKey, "finalizing", 95);
           }
         }
       },
     };
 
-    // Configure dtype for different models
-    if (modelKey === "qwen") {
-      pipelineOptions.dtype = "q4";
-    } else {
-      pipelineOptions.dtype = "q4";
+    // Configure dtype for non-Phi3 models (Phi-3 already configured above)
+    if (modelKey !== "phi3") {
+      pipelineOptions.dtype = "q4"; // Use 4-bit quantization for efficiency
     }
 
     // Load the model and store it
-    const pipeline = await transformersModule.pipeline(pipelineType, model.name, pipelineOptions);
-    
+    const pipeline = await transformersModule.pipeline(
+      pipelineType,
+      model.name,
+      pipelineOptions
+    );
+
     // Store the preloaded model
     preloadedModels[modelKey] = {
       pipeline,
       modelInfo: model,
-      loadTime: Date.now()
+      loadTime: Date.now(),
     };
 
     // Store in global window object to prevent double consent
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.aiModels = window.aiModels || {};
       window.aiModels[modelKey] = true;
     }
 
-    backgroundLoadingStatus[modelKey] = 'completed';
+    backgroundLoadingStatus[modelKey] = "completed";
     console.log(`✅ Background loading of ${modelKey} completed!`);
-    
+
     if (backgroundProgressCallback) {
-      backgroundProgressCallback(modelKey, 'completed', 100);
+      backgroundProgressCallback(modelKey, "completed", 100);
     }
-    
+
     return true;
   } catch (error) {
     console.error(`❌ Failed to background load ${modelKey} model:`, error);
-    backgroundLoadingStatus[modelKey] = 'error';
+    backgroundLoadingStatus[modelKey] = "error";
     if (backgroundProgressCallback) {
-      backgroundProgressCallback(modelKey, 'error', 0);
+      backgroundProgressCallback(modelKey, "error", 0);
     }
     return false;
   }
@@ -474,17 +565,28 @@ async function loadModelInBackground(modelKey: string): Promise<boolean> {
 
 async function loadModel(modelKey: string): Promise<boolean> {
   const model = AI_MODELS[modelKey];
-  if (!model || !transformersModule) {
-    console.error(
-      `❌ Model key invalid or transformers not loaded: ${modelKey}`
-    );
+  if (!model) {
+    console.error(`❌ Invalid model key: ${modelKey}`);
     return false;
+  }
+
+  // Initialize transformers.js if not already loaded
+  if (!transformersModule) {
+    try {
+      await initializeTransformers();
+    } catch (error) {
+      console.error(
+        `❌ Failed to initialize transformers for ${modelKey}:`,
+        error
+      );
+      return false;
+    }
   }
 
   try {
     console.log(`🤖 Loading ${modelKey} model: ${model.name}`);
     console.log(`📦 Model info: ${model.description} (${model.size})`);
-    
+
     // Initialize download state immediately when starting to load (user-requested)
     initializeDownloadState(modelKey, true);
     markModelAsUserRequested(modelKey);
@@ -495,25 +597,30 @@ async function loadModel(modelKey: string): Promise<boolean> {
 
     // Configure options based on model type and available files
     const pipelineOptions: any = {
-      device: "webgpu", // Try WebGPU first, will fallback to CPU automatically
+      device: hasWebGPUSupport() && model.recommendedWebGPU ? "webgpu" : "wasm",
+      // Phi-3 specific configuration (critical for working properly)
+      ...(modelKey === "phi3" && {
+        dtype: "q4f16", // Web-optimized quantization format
+        use_external_data_format: true, // Required for Phi-3
+      }),
       progress_callback: (progress: any) => {
         if (progress.status === "downloading") {
           const percentage = Math.round(progress.progress || 0);
           const loaded = progress.loaded || 0;
           const total = progress.total || 0;
           const remaining = total - loaded;
-          
+
           // Only update download state if this is a user-requested download
           if (hasUserRequestedModel(modelKey)) {
             updateDownloadState(modelKey, progress);
           }
-          
+
           // Send real progress data to UI if progress dialog is open
           if ((window as any).updateModelProgress) {
             (window as any).updateModelProgress({
               progress: progress.progress || 0,
               bytesDownloaded: loaded,
-              totalBytes: total
+              totalBytes: total,
             });
           }
 
@@ -562,12 +669,9 @@ async function loadModel(modelKey: string): Promise<boolean> {
       },
     };
 
-    // Configure dtype for different models
-    if (modelKey === "qwen") {
-      pipelineOptions.dtype = "q4"; // Use 4-bit quantization for good balance of quality and speed
-    } else {
-      // For other models like DistilBERT, use standard dtype
-      pipelineOptions.dtype = "q4";
+    // Configure dtype for non-Phi3 models (Phi-3 already configured above)
+    if (modelKey !== "phi3") {
+      pipelineOptions.dtype = "q4"; // Use 4-bit quantization for efficiency
     }
 
     // Load the model using CDN-based transformers
@@ -579,6 +683,12 @@ async function loadModel(modelKey: string): Promise<boolean> {
 
     // Test the model based on its type
     console.log(`🧪 Testing ${modelKey} model...`);
+
+    // Update progress dialog if visible
+    if ((window as any).updateModelStatus) {
+      (window as any).updateModelStatus(`🧪 Testing ${modelKey} model...`);
+    }
+
     let testResult;
 
     if (model.type === "chat") {
@@ -640,6 +750,12 @@ What is your name?<|im_end|>
     }
 
     console.log(`✅ ${modelKey} model test successful!`);
+
+    // Update progress dialog if visible
+    if ((window as any).updateModelStatus) {
+      (window as any).updateModelStatus(`✅ ${modelKey} model ready!`);
+    }
+
     currentModelName = `${modelKey} (${model.name})`;
     currentModelType = model.type;
     console.log(`🔄 Model switched to: ${currentModelName}`);
@@ -654,18 +770,20 @@ What is your name?<|im_end|>
 export async function initializeAI(): Promise<boolean> {
   try {
     console.log("🔧 Initializing AI system with pre-written responses...");
-    
+
     // EVERYONE starts with pre-written responses (user-driven upgrades only)
-    console.log("🔄 Starting with pre-written responses - AI models load only when user selects them");
+    console.log(
+      "🔄 Starting with pre-written responses - AI models load only when user selects them"
+    );
     isModelLoaded = true; // Pre-written responses are always "loaded"
     currentModelName = "prewritten (Pre-Written Responses)";
     currentModelType = "fallback";
     aiPipeline = null; // No AI pipeline needed for pre-written responses
-    
+
     console.log("✅ Pre-written response system ready!");
     console.log("📋 Active model: Pre-Written Responses");
     console.log("💡 AI models will load when user explicitly selects them");
-    
+
     return true;
   } catch (error) {
     console.error("💥 AI initialization error:", error);
@@ -724,8 +842,8 @@ export async function switchModel(modelKey: string): Promise<boolean> {
   }
 
   // Handle pre-written responses (always available)
-  if (modelKey === 'prewritten') {
-    console.log('🔄 Switching to pre-written responses mode');
+  if (modelKey === "prewritten") {
+    console.log("🔄 Switching to pre-written responses mode");
     currentModelName = "prewritten (Pre-Written Responses)";
     currentModelType = "fallback";
     isModelLoaded = true;
@@ -741,7 +859,10 @@ export async function switchModel(modelKey: string): Promise<boolean> {
   }
 
   // Check user consent for large models (both Phi-3 and Qwen)
-  if ((modelKey === 'phi3' || modelKey === 'qwen') && !hasUserConsentFor(modelKey)) {
+  if (
+    (modelKey === "phi3" || modelKey === "qwen") &&
+    !hasUserConsentFor(modelKey)
+  ) {
     console.log(`🤔 Requesting user consent for ${modelKey} model...`);
     try {
       const consent = await requestModelConsent(modelKey, AI_MODELS[modelKey]);
@@ -759,19 +880,22 @@ export async function switchModel(modelKey: string): Promise<boolean> {
   console.log(`🔄 Switching to ${modelKey} model...`);
 
   // Check if model is already preloaded
-  if (preloadedModels[modelKey] && backgroundLoadingStatus[modelKey] === 'completed') {
+  if (
+    preloadedModels[modelKey] &&
+    backgroundLoadingStatus[modelKey] === "completed"
+  ) {
     console.log(`⚡ Using preloaded ${modelKey} model - instant switch!`);
-    
+
     // Use the preloaded model
     aiPipeline = preloadedModels[modelKey].pipeline;
     currentModelName = `${modelKey} (${preloadedModels[modelKey].modelInfo.name})`;
     currentModelType = preloadedModels[modelKey].modelInfo.type;
     isModelLoaded = true;
-    
+
     console.log(`✅ Instantly switched to preloaded ${modelKey} model!`);
     console.log(`🔄 Model switched to: ${currentModelName}`);
     console.log(`📝 Model type: ${currentModelType}`);
-    
+
     return true;
   } else {
     // Model not preloaded, load it normally
@@ -793,14 +917,16 @@ export async function answerQuestion(question: string): Promise<string> {
   try {
     // iOS Safari compatibility check - known issue with transformers.js v3+
     if (isIOSDevice()) {
-      console.log("🍎 iOS device detected - using fallback responses due to known Safari compatibility issues");
+      console.log(
+        "🍎 iOS device detected - using fallback responses due to known Safari compatibility issues"
+      );
       return getIOSFallbackResponse(question);
     }
 
     // Enhanced browser-specific error handling
     if (!aiPipeline || !isModelLoaded) {
       console.log("🔄 AI pipeline not ready, attempting to initialize...");
-      const initialized = await initializeAI().catch(err => {
+      const initialized = await initializeAI().catch((err) => {
         console.error("❌ Failed to initialize AI:", err);
         return false;
       });
@@ -975,6 +1101,20 @@ function findRelevantContext(question: string): string {
     "expertise",
     "tools",
     "software",
+    "computer vision",
+    "tracking",
+    "optical flow",
+    "infrared",
+    "ir",
+    "fpa",
+    "photodetector",
+    "atmospheric modeling",
+    "radiative transfer",
+    "langchain",
+    "rag",
+    "power bi",
+    "azure",
+    "simulink",
   ];
   const educationKeywords = [
     "education",
@@ -1043,6 +1183,13 @@ function findRelevantContext(question: string): string {
     "games",
     "team",
     "athletic",
+    "ac como",
+    "como",
+    "professional player",
+    "coach",
+    "coaching",
+    "trainer",
+    "training",
   ];
 
   // Check which sections are relevant with priority scoring
@@ -1225,77 +1372,230 @@ function enhanceAnswer(answer: string, question: string): string {
   return enhanced;
 }
 
-// Enhanced fallback system with varied responses
-const responseVariations = {
+// Semantic analysis for better topic matching
+function analyzeQuestionTopics(questionLower: string): Record<string, number> {
+  const topicScores: Record<string, number> = {};
+  
+  // Deloitte-specific keywords (weighted by specificity)
+  const deloitteKeywords = {
+    'nps': 3, 'net promoter score': 3, 'energy company': 3, 'exogenous variables': 3,
+    'fashion retail': 3, 'supply chain': 3, 'forecasting': 2, 'customer segmentation': 3,
+    'recommendation system': 3, 'langchain': 3, 'rag': 3, 'power bi': 3, 'dashboard': 2,
+    'deloitte': 2, 'consulting': 1, 'data science': 1, 'analytics': 1
+  };
+  
+  // Leonardo SpA-specific keywords
+  const leonardoKeywords = {
+    'fpa': 3, 'focal plane array': 3, 'photodetector': 3, 'infrared': 3, 'ir system': 3,
+    'srr': 3, 'pdr': 3, 'cdr': 3, 'system requirements review': 3, 'optical flow': 3,
+    'tracking algorithm': 3, 'atmospheric modeling': 3, 'radiative transfer': 3,
+    'simulated scenario': 3, 'kalman filter': 3, 'computer vision': 2, 'defense': 2,
+    'leonardo': 2, 'missile warning': 3, 'threat detection': 3
+  };
+  
+  // Football-specific keywords
+  const footballKeywords = {
+    'ac como': 3, 'como': 2, 'professional soccer': 3, 'professional football': 3,
+    'coaching': 2, 'coach': 2, 'teamwork': 2, 'football': 1, 'soccer': 1, 'sport': 1
+  };
+  
+  // Travel-specific keywords (country-specific gets higher score)
+  const travelKeywords = {
+    'vietnam': 3, 'japan': 3, 'australia': 3, 'egypt': 3, 'germany': 3, 'morocco': 3,
+    'cultural exchange': 3, 'global perspective': 2, 'international': 2,
+    'travel': 1, 'country': 1, 'visit': 1, 'culture': 1
+  };
+  
+  // Reading-specific keywords
+  const readingKeywords = {
+    'lord of the rings': 3, 'divulgative essays': 3, 'continuous learning': 2,
+    'reading': 1, 'book': 1, 'literature': 2
+  };
+  
+  // Technical skills keywords
+  const skillsKeywords = {
+    'python': 2, 'matlab': 2, 'pytorch': 2, 'scikit-learn': 2, 'azure ml': 3,
+    'machine learning': 2, 'statistical analysis': 2, 'programming': 1,
+    'technology': 1, 'skill': 1
+  };
+  
+  // Calculate scores for each topic
+  const allTopics = {
+    deloitte: deloitteKeywords,
+    leonardo: leonardoKeywords, 
+    football: footballKeywords,
+    travel: travelKeywords,
+    reading: readingKeywords,
+    skills: skillsKeywords
+  };
+  
+  for (const [topic, keywords] of Object.entries(allTopics)) {
+    let score = 0;
+    for (const [keyword, weight] of Object.entries(keywords)) {
+      if (questionLower.includes(keyword)) {
+        score += weight;
+      }
+    }
+    if (score > 0) {
+      topicScores[topic] = score;
+    }
+  }
+  
+  return topicScores;
+}
+
+function getBestMatchingTopic(topicScores: Record<string, number>): string | null {
+  let bestTopic = null;
+  let highestScore = 0;
+  
+  for (const [topic, score] of Object.entries(topicScores)) {
+    if (score > highestScore) {
+      highestScore = score;
+      bestTopic = topic;
+    }
+  }
+  
+  return highestScore >= 2 ? bestTopic : null; // Minimum threshold
+}
+
+// Enhanced fallback system with varied responses based on PROFILE.md
+const responseVariations: Record<string, string[]> = {
   deloitte: [
-    "At Deloitte Consulting, I worked on fascinating data science projects including NPS analysis, energy cost optimization, and fashion retail forecasting. I also developed AI chatbots and recommendation systems.",
-    "My time at Deloitte was focused on data science consulting, where I helped clients optimize their business processes through analytics. I worked with tools like Power BI and developed various ML solutions.",
-    "At Deloitte, I specialized in business analytics and data science. Some highlights include working on customer satisfaction analytics, supply chain optimization, and developing advanced forecasting models.",
+    "At Deloitte Consulting, I worked on diverse data science projects including NPS (Net Promoter Score) forecasting for energy companies incorporating exogenous variables like energy cost fluctuations, fashion retail forecasting for supply chain optimization, and customer segmentation with personalized recommendation systems.",
+    "My Deloitte experience involved advanced analytics: developing LangChain-based RAG (Retrieval-Augmented Generation) chatbots for customer service automation, creating interactive Power BI dashboards for real-time energy industry monitoring, and building predictive models across multiple business scenarios.",
+    "At Deloitte, I specialized in business analytics across industries. Key projects included fashion retail demand prediction with inventory optimization, energy company customer satisfaction modeling using external market factors, and sophisticated recommendation engines based on behavioral clustering analysis.",
   ],
   leonardo: [
-    "At Leonardo SpA, I was an R&D System Engineer working on cutting-edge infrared and defense systems. My work involved missile warning coverage, object detection, and multi-target tracking using advanced computer vision.",
-    "Leonardo SpA was where I dove deep into defense technology - specifically infrared systems for threat detection. I worked with MATLAB/Simulink on everything from atmospheric transmission modeling to Kalman filtering.",
-    "My R&D role at Leonardo involved developing sophisticated defense systems. I worked on 360-degree missile warning coverage, optical flow analysis, and multi-camera positioning systems for threat detection.",
+    "I currently work as a System R&D Engineer at Leonardo SpA, focusing on infrared optical systems with FPA (Focal Plane Array) photodetectors. My role spans system design with SRR/PDR/CDR reviews and algorithm development for tracking systems and optical flow analysis in real-time defense applications.",
+    "At Leonardo SpA, I develop cutting-edge IR optical systems and computer vision algorithms. My work includes atmospheric modeling using radiative transfer theory, Kalman filter implementation for state estimation, and creating simulated scenarios to test system performance under various conditions.",
+    "My Leonardo role involves two core activities: requirements engineering for defense systems and algorithm development for computer vision. I work extensively with FPA photodetectors, atmospheric radiative characteristics modeling, and tracking algorithms for missile warning and threat detection systems.",
   ],
   skills: [
-    "My technical skills span both data science and systems engineering: Python, MATLAB, machine learning, computer vision, and cloud platforms like Azure. I also have experience with Power BI and various analytics tools.",
-    "I work with a diverse tech stack including Python for data science, MATLAB for system modeling, and cloud platforms like Azure ML. My experience covers everything from statistical analysis to computer vision.",
-    "My expertise includes programming in Python and MATLAB, machine learning with PyTorch and scikit-learn, cloud computing with Azure, and business intelligence with Power BI. I enjoy working across the full technology stack.",
+    "My technical expertise spans data science and system engineering: Python with scikit-learn and PyTorch for ML, MATLAB/Simulink for system modeling, computer vision algorithms including tracking and optical flow, and cloud platforms like Azure ML and Azure Data Factory for scalable analytics.",
+    "I work with a comprehensive tech stack: Python for statistical analysis and machine learning, MATLAB for defense system simulation, Power BI for business intelligence, and advanced computer vision techniques. My background bridges business analytics and technical R&D engineering.",
+    "My core competencies include programming in Python and MATLAB, machine learning with PyTorch and scikit-learn, cloud computing with Azure ecosystem, business intelligence with Power BI dashboards, and specialized defense technology like IR systems and atmospheric modeling.",
   ],
   football: [
-    "Football is one of my biggest passions! I love both playing recreationally with friends and following professional leagues. It's taught me valuable lessons about teamwork, strategy, and maintaining physical fitness.",
-    "I've been passionate about football since I was young. Whether I'm playing a casual game or watching the professionals, I love the combination of physical skill, tactical thinking, and team dynamics.",
-    "Football keeps me active and helps me unwind from technical work. There's something special about the sport's blend of individual skill and team strategy that I find really engaging.",
+    "Football is my lifelong passion! I played as a professional soccer player at AC COMO and coached children in football fundamentals. The sport taught me teamwork, strategic thinking, and leadership - skills I directly apply to collaborative engineering projects and technical problem-solving.",
+    "My football journey includes professional experience at AC COMO and mentoring young players as a coach. Beyond just a hobby, football developed my understanding of teamwork dynamics, tactical analysis, and performance under pressure - all valuable in defense system engineering.",
+    "I've had an incredible football career from playing professionally at AC COMO to coaching the next generation. The discipline, collaboration skills, and strategic thinking learned through football continuously benefit my approach to complex technical challenges and team leadership.",
   ],
   travel: [
-    "I've been fortunate to travel to 14 countries across 4 continents - from the tech innovation in Japan and Australia to the rich cultures of Morocco and Vietnam. Each destination has broadened my perspective.",
-    "My travel experiences have taken me everywhere from the ancient cultures of Egypt to the modern efficiency of Germany. Visiting places like Japan, Maldives, and various European countries has given me a global mindset.",
-    "Traveling has been incredibly enriching - whether exploring the technological landscapes of Australia and Japan or the cultural heritage of Morocco and Egypt. Each country teaches you something new about approaching challenges.",
+    "I'm passionate about travel and cultural exchange! I've visited Vietnam, Japan, USA, Australia, Egypt, Germany, France, Poland, the Baltic republics, and more across multiple continents. Each destination offered unique insights into different approaches to innovation, efficiency, and problem-solving.",
+    "My international experiences span technological innovation hubs like Japan and Australia, rich historical cultures like Egypt and Vietnam, and efficient engineering approaches in Germany. I believe travel is essential education - exposing you to diverse perspectives that enhance both personal growth and professional adaptability.",
+    "Exploring different countries has profoundly shaped my global perspective. From experiencing Japan's continuous improvement philosophy (kaizen) to Germany's systematic engineering approach, each culture offers unique problem-solving insights that I apply in my technical work and international collaboration.",
+  ],
+  reading: [
+    "I discovered my love for reading through 'The Lord of the Rings' at age 11 - that epic adventure opened my eyes to storytelling's power. Today I'm drawn to divulgative essays that make complex topics accessible and engaging, supporting my philosophy of continuous learning through diverse perspectives.",
+    "My reading journey began with Tolkien's masterpiece when I was 11, sparking a lifelong passion for literature. Now I focus on divulgative essays and technical literature that broaden understanding beyond my immediate field, helping me stay intellectually curious and professionally adaptable.",
+    "Reading has been essential to my continuous learning philosophy since discovering 'The Lord of the Rings' as a child. I particularly enjoy authors who take specialized knowledge and present it accessibly - this habit of diverse reading shapes how I approach problems, process information, and understand different viewpoints.",
+  ],
+  // Country-specific travel responses
+  japan: [
+    "Japan fascinated me with its perfect blend of ancient tradition and cutting-edge technology. The technological innovation there is incredible - from efficient transportation systems to manufacturing approaches. What struck me most was the Japanese philosophy of continuous improvement (kaizen), which has influenced my own engineering approach.",
+    "My experience in Japan was transformative - witnessing firsthand how they balance respect for tradition with technological advancement. The attention to detail and systematic approach to problem-solving I observed there directly influences how I approach complex engineering challenges today.",
+    "Japan showed me how different cultures can approach technological challenges in uniquely innovative ways. The experience of navigating a completely different cultural context taught me valuable lessons about adaptation and creative problem-solving that I apply in international technical collaborations."
+  ],
+  australia: [
+    "Australia impressed me with its incredible balance of outdoor adventure culture and technological sophistication. The country's approach to innovation, particularly in mining technology and environmental systems, was fascinating to observe and provided insights into large-scale engineering solutions.",
+    "What I appreciated most about Australia was the emphasis on work-life balance and how this actually enhances creativity and productivity. The scale of everything - from landscapes to engineering projects - gave me new appreciation for systems thinking at a massive scale.",
+    "Australia's approach to managing resources across continental distances and coordinating operations in remote locations showed me impressive solutions for large-scale challenges. The experience reinforced my belief that diverse environments foster innovative thinking and adaptability."
+  ],
+  vietnam: [
+    "Vietnam offered incredible lessons in resilience and adaptation. The rapid development and ingenuity of Vietnamese engineers in embracing technology to leapfrog traditional development stages was truly inspiring - from mobile payment systems to creative urban transportation solutions.",
+    "I was particularly impressed by how Vietnamese culture emphasizes family, community, and long-term thinking, providing valuable perspective on how different societies approach complex problems. The Vietnamese approach to balancing tradition with modernization offers insights I apply in integrating new technologies with existing systems.",
+    "The warmth and hospitality of Vietnamese people, combined with witnessing the country's remarkable technological advancement, made it an unforgettable experience that continues to influence my worldview and approach to collaborative innovation."
+  ],
+  germany: [
+    "Germany impressed me with its incredible efficiency and systematic approach to engineering and technology. The German work ethic perfectly balances thoroughness with efficiency - taking the time needed to do things right while maintaining high productivity levels.",
+    "The German reputation for precision and quality is absolutely well-deserved and has significantly influenced my professional standards. I particularly appreciated how they integrate sustainability and environmental consciousness into engineering solutions, providing models for addressing environmental challenges through technology.",
+    "Germany demonstrated how systematic thinking and methodical approaches can lead to exceptional engineering outcomes. The experience enhanced my appreciation for thorough planning, quality control, and sustainable engineering practices that I now apply in defense system development."
+  ],
+  egypt: [
+    "Egypt provided an incredible window into rich historical culture while showcasing how ancient civilizations developed sophisticated engineering solutions. Witnessing the intersection of historical achievements with modern development offered unique perspectives on long-term thinking and sustainable design.",
+    "The experience in Egypt taught me to appreciate how different cultures have approached monumental engineering challenges throughout history. Understanding these historical perspectives provides valuable context for modern engineering problems and solutions.",
+    "Egypt's combination of ancient wisdom and modern adaptation showed me how engineering principles transcend time and culture. The experience broadened my understanding of how different societies approach complex technical challenges over millennia."
   ],
 };
 
 export function getFallbackResponse(question: string): string {
   const questionLower = question.toLowerCase();
-  
+
   // Get browser information for context-aware messaging
   const browserInfo = getBrowserInfo();
   let browserContext = "";
-  
+
   // Add browser-specific context if this is a fallback due to browser limitations
-  if (browserInfo.os === 'iOS' && browserInfo.name === 'Safari') {
+  if (browserInfo.os === "iOS" && browserInfo.name === "Safari") {
     browserContext = "[iOS Safari compatibility mode] ";
-  } else if (browserInfo.isMobile && browserInfo.name === 'Chrome') {
+  } else if (browserInfo.isMobile && browserInfo.name === "Chrome") {
     browserContext = "[Chrome mobile optimized] ";
   } else if (browserInfo.isMobile) {
     browserContext = `[${browserInfo.name} mobile mode] `;
   }
 
-  // Use varied responses for common topics
+  // Enhanced semantic topic analysis
+  const topicScores = analyzeQuestionTopics(questionLower);
+  const bestTopic = getBestMatchingTopic(topicScores);
+  
+  // Use best matching topic if found with high confidence
+  if (bestTopic && responseVariations[bestTopic]) {
+    const responses = responseVariations[bestTopic];
+    return browserContext + responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  // Enhanced fallback keyword matching for edge cases
   if (questionLower.includes("deloitte")) {
     const responses = responseVariations.deloitte;
-    return browserContext + responses[Math.floor(Math.random() * responses.length)];
+    return (
+      browserContext + responses[Math.floor(Math.random() * responses.length)]
+    );
   } else if (questionLower.includes("leonardo")) {
     const responses = responseVariations.leonardo;
-    return browserContext + responses[Math.floor(Math.random() * responses.length)];
+    return (
+      browserContext + responses[Math.floor(Math.random() * responses.length)]
+    );
   } else if (
     questionLower.includes("skill") ||
-    questionLower.includes("technology")
+    questionLower.includes("technology") ||
+    questionLower.includes("programming") ||
+    questionLower.includes("python") ||
+    questionLower.includes("matlab")
   ) {
     const responses = responseVariations.skills;
-    return browserContext + responses[Math.floor(Math.random() * responses.length)];
+    return (
+      browserContext + responses[Math.floor(Math.random() * responses.length)]
+    );
   } else if (
     questionLower.includes("football") ||
-    questionLower.includes("soccer")
+    questionLower.includes("soccer") ||
+    questionLower.includes("como") ||
+    questionLower.includes("coach")
   ) {
     const responses = responseVariations.football;
-    return browserContext + responses[Math.floor(Math.random() * responses.length)];
+    return (
+      browserContext + responses[Math.floor(Math.random() * responses.length)]
+    );
   } else if (
     questionLower.includes("travel") ||
     questionLower.includes("country") ||
-    questionLower.includes("visit")
+    questionLower.includes("visit") ||
+    questionLower.includes("culture")
   ) {
     const responses = responseVariations.travel;
-    return browserContext + responses[Math.floor(Math.random() * responses.length)];
+    return (
+      browserContext + responses[Math.floor(Math.random() * responses.length)]
+    );
+  } else if (
+    questionLower.includes("reading") ||
+    questionLower.includes("book") ||
+    questionLower.includes("literature") ||
+    questionLower.includes("lord of the rings")
+  ) {
+    const responses = responseVariations.reading;
+    return (
+      browserContext + responses[Math.floor(Math.random() * responses.length)]
+    );
   }
 
   // Single responses for less common topics
@@ -1303,31 +1603,63 @@ export function getFallbackResponse(question: string): string {
     questionLower.includes("experience") ||
     questionLower.includes("work")
   ) {
-    return browserContext + "I have experience in both Data Science consulting at Deloitte and R&D System Engineering at Leonardo SpA. I've worked on projects ranging from business analytics and machine learning to infrared defense systems and computer vision.";
+    return (
+      browserContext +
+      "I have experience in both Data Science consulting at Deloitte and R&D System Engineering at Leonardo SpA. I've worked on projects ranging from business analytics and machine learning to infrared defense systems and computer vision."
+    );
   } else if (
     questionLower.includes("reading") ||
     questionLower.includes("book")
   ) {
-    return browserContext + "I'm an avid reader who enjoys both technical literature and business books. Reading helps me stay current with industry trends and broaden my perspective beyond just technical topics.";
+    return (
+      browserContext +
+      "I discovered my love for reading through 'The Lord of the Rings' when I was 11 years old. Now I'm an avid reader who enjoys divulgative essays and technical literature. Reading helps me stay current with industry trends and broaden my perspective beyond just technical topics."
+    );
   } else if (
     questionLower.includes("hobby") ||
     questionLower.includes("personal") ||
     questionLower.includes("interest")
   ) {
-    return browserContext + "My main hobbies are football, traveling, and reading. These interests have shaped me both personally and professionally - football taught me teamwork, travel gave me cultural awareness, and reading keeps me intellectually curious.";
+    return (
+      browserContext +
+      "My main hobbies are football, traveling, and reading. These interests have shaped me both personally and professionally - football taught me teamwork, travel gave me cultural awareness, and reading keeps me intellectually curious."
+    );
   } else if (
     questionLower.includes("culture") ||
     questionLower.includes("international")
   ) {
-    return browserContext + "My international travel experiences have given me a global perspective that's valuable in today's interconnected world. I've experienced everything from the tech innovation in Japan to the rich history of Morocco.";
+    return (
+      browserContext +
+      "My international travel experiences have given me a global perspective that's valuable in today's interconnected world. I've experienced everything from the tech innovation in Japan to the rich history of Morocco."
+    );
+  } else if (
+    questionLower.includes("nps") ||
+    questionLower.includes("net promoter") ||
+    questionLower.includes("srr") ||
+    questionLower.includes("pdr") ||
+    questionLower.includes("cdr") ||
+    questionLower.includes("fpa") ||
+    questionLower.includes("focal plane") ||
+    questionLower.includes("rag") ||
+    questionLower.includes("retrieval augmented")
+  ) {
+    return (
+      browserContext +
+      "I work with various technical acronyms and methodologies: NPS (Net Promoter Score) for customer analytics, SRR/PDR/CDR (System/Preliminary/Critical Design Reviews) for engineering processes, FPA (Focal Plane Array) photodetectors for IR systems, and RAG (Retrieval-Augmented Generation) for advanced AI applications."
+    );
   } else {
-    return browserContext + "I'm a professional with diverse experience in data science consulting and R&D engineering. Feel free to ask about my work at Deloitte, Leonardo SpA, my technical skills, my hobbies, or my travel experiences!";
+    return (
+      browserContext +
+      "I'm a professional with diverse experience in data science consulting and R&D engineering. Feel free to ask about my work at Deloitte, Leonardo SpA, my technical skills, my hobbies, or my travel experiences!"
+    );
   }
 }
 
 // === Background Loading Functions ===
 
-export function setBackgroundProgressCallback(callback: (modelKey: string, status: string, progress?: number) => void): void {
+export function setBackgroundProgressCallback(
+  callback: (modelKey: string, status: string, progress?: number) => void
+): void {
   backgroundProgressCallback = callback;
 }
 
@@ -1339,19 +1671,21 @@ export function getModelLoadingStatus(): { [key: string]: string } {
 }
 
 export function getModelDownloadState(modelKey: string) {
-  return modelDownloadState[modelKey] || {
-    status: 'not_started',
-    progress: 0,
-    speed: 0,
-    bytesDownloaded: 0,
-    totalBytes: 0,
-    timeRemaining: 0,
-    userRequested: false
-  };
+  return (
+    modelDownloadState[modelKey] || {
+      status: "not_started",
+      progress: 0,
+      speed: 0,
+      bytesDownloaded: 0,
+      totalBytes: 0,
+      timeRemaining: 0,
+      userRequested: false,
+    }
+  );
 }
 
 export function isModelDownloading(modelKey: string): boolean {
-  return modelDownloadState[modelKey]?.status === 'downloading';
+  return modelDownloadState[modelKey]?.status === "downloading";
 }
 
 export function hasUserRequestedModel(modelKey: string): boolean {
@@ -1369,15 +1703,15 @@ export function isUserRequestedDownload(modelKey: string): boolean {
 
 function updateDownloadState(modelKey: string, progress: any) {
   const loaded = progress.loaded || 0;
-  const total = progress.total || (1.8 * 1024 * 1024 * 1024); // 1.8GB estimate
-  const progressPercent = progress.progress || (loaded / total);
-  
+  const total = progress.total || 1.8 * 1024 * 1024 * 1024; // 1.8GB estimate
+  const progressPercent = progress.progress || loaded / total;
+
   // Calculate speed if we have previous state
   const currentTime = Date.now();
   const prevState = modelDownloadState[modelKey];
   let speed = 0;
   let timeRemaining = 0;
-  
+
   if (prevState && prevState.bytesDownloaded > 0) {
     const timeDiff = currentTime - (prevState as any).lastUpdate;
     const bytesDiff = loaded - prevState.bytesDownloaded;
@@ -1387,54 +1721,63 @@ function updateDownloadState(modelKey: string, progress: any) {
       timeRemaining = speed > 0 ? remainingBytes / speed : 0;
     }
   }
-  
+
   const isCompleted = progressPercent >= 0.99;
-  
+
   // Preserve userRequested flag when updating
   const wasUserRequested = modelDownloadState[modelKey]?.userRequested || false;
-  
+
   modelDownloadState[modelKey] = {
-    status: isCompleted ? 'completed' : 'downloading',
+    status: isCompleted ? "completed" : "downloading",
     progress: progressPercent,
     speed: speed / (1024 * 1024), // MB/s
     bytesDownloaded: loaded,
     totalBytes: total,
     timeRemaining: timeRemaining,
     userRequested: wasUserRequested,
-    lastUpdate: currentTime
+    lastUpdate: currentTime,
   } as any;
-  
+
   // Mark as completed in global tracking when download finishes
   if (isCompleted) {
     console.log(`✅ ${modelKey} download completed!`);
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.aiModels = window.aiModels || {};
       window.aiModels[modelKey] = true;
     }
-    backgroundLoadingStatus[modelKey] = 'completed';
+    backgroundLoadingStatus[modelKey] = "completed";
   }
 }
 
-export function initializeDownloadState(modelKey: string, userRequested: boolean = false): void {
-  console.log(`🚀 Initializing download state for ${modelKey} (user requested: ${userRequested})`);
+export function initializeDownloadState(
+  modelKey: string,
+  userRequested: boolean = false
+): void {
+  console.log(
+    `🚀 Initializing download state for ${modelKey} (user requested: ${userRequested})`
+  );
   modelDownloadState[modelKey] = {
-    status: 'downloading',
+    status: "downloading",
     progress: 0,
     speed: 0,
     bytesDownloaded: 0,
     totalBytes: 1.8 * 1024 * 1024 * 1024, // 1.8GB estimate
     timeRemaining: 0,
     userRequested: userRequested,
-    lastUpdate: Date.now()
+    lastUpdate: Date.now(),
   } as any;
 }
 
 export async function startBackgroundLoading(): Promise<void> {
-  console.log("🚀 Background loading disabled - AI models load only when user selects them");
+  console.log(
+    "🚀 Background loading disabled - AI models load only when user selects them"
+  );
   console.log("💡 This prevents performance impact during app startup");
   console.log("📋 Users start with instant pre-written responses");
-  console.log("🎯 AI models will download when user explicitly chooses them in dropdown");
-  
+  console.log(
+    "🎯 AI models will download when user explicitly chooses them in dropdown"
+  );
+
   // No background loading - user-driven only!
   // This prevents:
   // 1. Heavy downloads impacting startup performance

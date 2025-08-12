@@ -153,8 +153,20 @@ export async function requestModelConsent(modelKey: string, modelInfo: any, onPr
     (window as any).modelProgressCallback = onProgress;
   }
 
-  // Prepare consent information
-  const sizeInGB = parseFloat(modelInfo.size.replace('~', '').replace('GB', ''));
+  // Prepare consent information - handle both MB and GB
+  let sizeInGB: number;
+  const sizeStr = modelInfo.size.replace('~', '').trim();
+  if (sizeStr.includes('MB')) {
+    // Convert MB to GB: divide by 1000 (decimal)
+    sizeInGB = parseFloat(sizeStr.replace('MB', '')) / 1000;
+  } else if (sizeStr.includes('GB')) {
+    sizeInGB = parseFloat(sizeStr.replace('GB', ''));
+  } else {
+    // Fallback - assume GB if no unit specified
+    sizeInGB = parseFloat(sizeStr);
+  }
+  
+  console.log(`📊 Model size parsing: "${modelInfo.size}" → ${sizeInGB} GB`);
   
   // Check network speed and get warnings
   console.log('🔍 Checking network capabilities...');
@@ -376,6 +388,10 @@ function showConsentDialog(info: ConsentInfo, networkCheck: any, callback: (resu
 }
 
 function showDownloadProgress(dialog: HTMLDivElement, callback: (result: ConsentResult) => void, result: ConsentResult): void {
+  // Start download immediately
+  setTimeout(() => {
+    callback(result);
+  }, 500); // Small delay to let progress UI show first
   // Find parent overlay and style for cleanup
   const overlay = dialog.parentElement as HTMLDivElement;
   const style = document.head.querySelector('style:last-child') as HTMLStyleElement;
@@ -402,9 +418,16 @@ function showDownloadProgress(dialog: HTMLDivElement, callback: (result: Consent
         </div>
       </div>
       
-      <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
-        <span id="download-speed">Estimating speed...</span>
+      <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 10px;">
+        <span id="download-speed">Starting download...</span>
         <span id="time-remaining">Calculating time...</span>
+      </div>
+
+      <div style="background: #e8f5e8; border-radius: 6px; padding: 10px; border-left: 4px solid #28a745;">
+        <div style="font-size: 13px; color: #155724; font-weight: bold; margin-bottom: 5px;">Status:</div>
+        <div id="model-status" style="font-size: 12px; color: #155724; font-family: monospace;">
+          📦 Preparing to download model...
+        </div>
       </div>
     </div>
 
@@ -440,8 +463,7 @@ function showDownloadProgress(dialog: HTMLDivElement, callback: (result: Consent
 
   const continueBtn = dialog.querySelector('#continue-background') as HTMLButtonElement;
   continueBtn.addEventListener('click', () => {
-    cleanup(); // Close dialog first
-    callback(result);
+    cleanup(); // Just close dialog - download already started
   });
 
   // Set up real progress tracking
@@ -449,11 +471,19 @@ function showDownloadProgress(dialog: HTMLDivElement, callback: (result: Consent
   const progressPercentage = dialog.querySelector('#progress-percentage') as HTMLSpanElement;
   const downloadSpeed = dialog.querySelector('#download-speed') as HTMLSpanElement;
   const timeRemaining = dialog.querySelector('#time-remaining') as HTMLSpanElement;
+  const modelStatus = dialog.querySelector('#model-status') as HTMLDivElement;
 
   let startTime = Date.now();
   let lastUpdateTime = startTime;
   let lastBytesDownloaded = 0;
   let isComplete = false;
+
+  // Global status update function
+  (window as any).updateModelStatus = (message: string) => {
+    if (modelStatus) {
+      modelStatus.textContent = message;
+    }
+  };
 
   // Real progress callback that gets called by Transformers.js
   (window as any).updateModelProgress = (progressData: {
@@ -483,6 +513,17 @@ function showDownloadProgress(dialog: HTMLDivElement, callback: (result: Consent
     progressBar.style.width = `${progressPercent}%`;
     progressPercentage.textContent = `${progressPercent}%`;
     
+    // Update status based on progress
+    if (progressPercent < 10) {
+      modelStatus.textContent = '📥 Downloading model files...';
+    } else if (progressPercent < 50) {
+      modelStatus.textContent = '⬇️ Download in progress...';
+    } else if (progressPercent < 90) {
+      modelStatus.textContent = '📊 Almost complete...';
+    } else if (progressPercent < 99) {
+      modelStatus.textContent = '🔄 Loading model into memory...';
+    }
+    
     // Format download speed
     if (speedMBPerSecond > 0) {
       downloadSpeed.textContent = `${speedMBPerSecond.toFixed(1)} MB/s`;
@@ -506,10 +547,11 @@ function showDownloadProgress(dialog: HTMLDivElement, callback: (result: Consent
       progressPercentage.textContent = '100%';
       timeRemaining.textContent = 'Complete!';
       downloadSpeed.textContent = `${speedMBPerSecond.toFixed(1)} MB/s (finished)`;
+      modelStatus.textContent = '🧪 Testing model...';
       
       setTimeout(() => {
-        callback(result);
-      }, 1500);
+        cleanup(); // Auto-close dialog when complete
+      }, 2000);
     }
 
     // Update for next calculation
@@ -520,10 +562,12 @@ function showDownloadProgress(dialog: HTMLDivElement, callback: (result: Consent
   // Initial state
   downloadSpeed.textContent = 'Starting download...';
   timeRemaining.textContent = 'Calculating...';
+  modelStatus.textContent = '🚀 Initializing download...';
 
   // Store cleanup function
   (continueBtn as any).cleanup = () => {
     (window as any).updateModelProgress = null;
+    (window as any).updateModelStatus = null;
     isComplete = true;
   };
 }

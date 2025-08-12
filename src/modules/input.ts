@@ -1,19 +1,18 @@
 // modules/input.ts - Enhanced version with continuous movement
 
-import { player, playerAnimations, Direction, AnimationState } from "./player";
+import { player, playerAnimations, Direction } from "./player";
 import { getCurrentRoom } from "./roomManager";
 import { checkForDoorInteraction, getDoorAtPosition, updateStatusBar } from "./roomManager";
 import { WALKABLE_TILES } from "./map";
 import { isBossInteractionAvailable } from "./bossInteraction";
 import { gameBoyConversation } from "./gameboyConversation";
+import { isPositionInteractive, tileInteractionManager } from "./tileInteraction";
 
 let keysPressed: { [key: string]: boolean } = {};
 let currentDoorMessage: string | null = null;
 let messageDisplayElement: HTMLDivElement | null = null;
 let movementInterval: number | null = null;
-let messageTimeoutId: number | null = null;
 const MOVEMENT_SPEED = 200; // milliseconds between moves when key is held
-const MESSAGE_TIMEOUT = 2000; // Auto-hide door messages after 2 seconds
 
 export function setupInputListeners(): void {
   document.addEventListener("keydown", handleKeyDown);
@@ -109,7 +108,7 @@ function handleKeyDown(e: KeyboardEvent): void {
           console.log("Starting GameBoy-style boss conversation!");
           gameBoyConversation.showConversation();
         } else if (!gameBoyConversation.isConversationActive()) {
-          // Check if the player is on a door
+          // Check if the player is on a door FIRST (highest priority)
           const door = getDoorAtPosition(player.x, player.y);
           if (door) {
             console.log(`Attempting to enter door to ${door.targetRoom}`);
@@ -118,7 +117,28 @@ function handleKeyDown(e: KeyboardEvent): void {
               hideDoorMessage(); // Hide message when transitioning
             }
           } else {
-            console.log("No door here to interact with.");
+            // Check for interactive tiles in adjacent positions
+            let interactedWithTile = false;
+            const adjacentOffsets = [
+              {x: -1, y: 0}, {x: 1, y: 0},   // Left, Right
+              {x: 0, y: -1}, {x: 0, y: 1}    // Up, Down
+            ];
+            
+            for (const offset of adjacentOffsets) {
+              const checkX = player.x + offset.x;
+              const checkY = player.y + offset.y;
+              
+              if (isPositionInteractive(checkX, checkY)) {
+                console.log(`Interacting with tile at adjacent position (${checkX}, ${checkY})`);
+                tileInteractionManager.handleTileClick(checkX, checkY);
+                interactedWithTile = true;
+                break;
+              }
+            }
+            
+            if (!interactedWithTile) {
+              console.log("No interactive element here.");
+            }
           }
         }
 
@@ -380,4 +400,4 @@ function simulateKeyRelease(key: string): void {
 }
 
 // Export the message functions for external use
-export { showDoorMessage, hideDoorMessage, currentDoorMessage };
+export { showDoorMessage, hideDoorMessage };

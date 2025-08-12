@@ -1,7 +1,7 @@
 import { updateDebugPanel } from "./modules/debug";
 import { loadAssets, getAssets } from "./modules/assets";
 import { preloadPlayerSprites } from "./modules/sprites";
-import { MAP_WIDTH_TILES, MAP_HEIGHT_TILES } from "./modules/map";
+import { MAP_WIDTH_TILES, MAP_HEIGHT_TILES, Room } from "./modules/map";
 import { player, updatePlayerAnimation, drawPlayer } from "./modules/player";
 import { setupInputListeners, setupTouchControls } from "./modules/input";
 import { setupCanvas, scaleCanvasToWindow } from "./modules/canvas";
@@ -11,6 +11,8 @@ import { answerQuestion, getFallbackResponse, isAIReady, switchModel, getCurrent
 import { gameBoyConversation } from "./modules/gameboyConversation";
 import { initializeDesktopControls } from "./modules/desktopControls";
 import { directionalSignalManager } from "./modules/directionalSignals";
+import { getInteractivePositions, isPositionInteractive } from "./modules/tileInteraction";
+import { getTileStory } from "./modules/tileStories";
 
 // --- Setup canvas ---
 const dummyMap = Array(MAP_HEIGHT_TILES)
@@ -91,6 +93,9 @@ function gameLoop(currentTime: number): void {
   if (nearestSignal) {
     updateStatusBar(`${nearestSignal.icon} ${nearestSignal.roomName} - ${nearestSignal.description}`, 100); // Short duration for frequent updates
   }
+  
+  // Check for nearby interactive tiles and show proximity hints
+  checkForNearbyInteractiveTiles();
   
   // Check boss proximity (only if conversation is not active)
   if (!gameBoyConversation.isConversationActive()) {
@@ -661,6 +666,9 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
     }
   }
 
+  // Draw interactive tile hints
+  drawInteractiveTileHints(ctx, tileSize, currentRoom);
+
   // Draw directional signals (before player so player appears on top)
   directionalSignalManager.render(ctx, tileSize, currentRoom.id);
 
@@ -670,6 +678,41 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
   // Room titles/subtitles removed as requested - using status bar instead
 
   // No more hobby labels - removed as requested
+}
+
+function drawInteractiveTileHints(ctx: CanvasRenderingContext2D, tileSize: number, currentRoom: Room): void {
+  // No visual overlays - tiles should look natural
+  // Interaction discovery happens through proximity-based status bar hints only
+}
+
+// Function to check for nearby interactive tiles and show status hints
+function checkForNearbyInteractiveTiles(): void {
+  const currentRoom = getCurrentRoom();
+  
+  // Check adjacent tiles only (player should interact from adjacent position)
+  const adjacentOffsets = [
+    {x: -1, y: 0}, {x: 1, y: 0},   // Left, Right
+    {x: 0, y: -1}, {x: 0, y: 1}    // Up, Down (prioritize cardinal directions)
+  ];
+  
+  for (const offset of adjacentOffsets) {
+    const checkX = player.x + offset.x;
+    const checkY = player.y + offset.y;
+    
+    // Check bounds
+    if (checkX >= 0 && checkX < currentRoom.map[0].length && 
+        checkY >= 0 && checkY < currentRoom.map.length) {
+      
+      if (isPositionInteractive(checkX, checkY)) {
+        const tileId = currentRoom.map[checkY][checkX];
+        const story = getTileStory(tileId, currentRoom.id);
+        if (story) {
+          updateStatusBar(`${story.modalContent.icon || '💡'} ${story.modalContent.title} - Press SPACE to interact`, 100);
+          return;
+        }
+      }
+    }
+  }
 }
 
 // drawRoomInfo function removed - room information now shown in status bar
@@ -708,6 +751,9 @@ loadAssets(() => {
   
   // Start background loading - this happens in parallel with game play
   startBackgroundLoading();
+
+  console.log("🎯 Interactive tile system initialized!");
+  console.log("💡 Click on glowing tiles to learn more about my experiences!");
 
   console.log("Starting game...");
   startGame();
