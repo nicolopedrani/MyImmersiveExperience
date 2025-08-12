@@ -11,6 +11,7 @@ class ModalSystem {
   private overlay: HTMLDivElement | null = null;
   private modal: HTMLDivElement | null = null;
   private isOpen = false;
+  private onCloseCallback: (() => void) | null = null;
 
   constructor() {
     this.createModalElements();
@@ -140,6 +141,12 @@ class ModalSystem {
     this.overlay.style.opacity = '0';
     this.modal.style.transform = 'scale(0.9)';
 
+    // Call callback if provided
+    if (this.onCloseCallback) {
+      this.onCloseCallback();
+      this.onCloseCallback = null; // Clear callback after use
+    }
+
     // Hide after animation
     setTimeout(() => {
       if (this.overlay) {
@@ -161,6 +168,10 @@ class ModalSystem {
   public isModalOpen(): boolean {
     return this.isOpen;
   }
+
+  public setOnCloseCallback(callback: (() => void) | null): void {
+    this.onCloseCallback = callback;
+  }
 }
 
 // Create and export singleton instance
@@ -177,4 +188,8 @@ export function closeTileModal(): void {
 
 export function isTileModalOpen(): boolean {
   return modalSystem.isModalOpen();
+}
+
+export function setTileModalCloseCallback(callback: (() => void) | null): void {
+  modalSystem.setOnCloseCallback(callback);
 }

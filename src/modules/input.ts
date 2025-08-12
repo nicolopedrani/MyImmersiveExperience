@@ -7,6 +7,7 @@ import { WALKABLE_TILES } from "./map";
 import { isBossInteractionAvailable } from "./bossInteraction";
 import { gameBoyConversation } from "./gameboyConversation";
 import { isPositionInteractive, tileInteractionManager } from "./tileInteraction";
+import { guidedTourManager } from "./guidedTour";
 
 let keysPressed: { [key: string]: boolean } = {};
 let currentDoorMessage: string | null = null;
@@ -61,11 +62,23 @@ function hideDoorMessage(): void {
 }
 
 function handleKeyDown(e: KeyboardEvent): void {
-  // Handle ESC key to exit conversation
-  if (e.key === 'Escape' && gameBoyConversation.isConversationActive()) {
-    gameBoyConversation.hideConversation();
-    e.preventDefault();
-    return;
+  // Handle ESC key - priority order: conversation -> guided tour -> other
+  if (e.key === 'Escape') {
+    // First priority: Exit active conversation
+    if (gameBoyConversation.isConversationActive()) {
+      gameBoyConversation.hideConversation();
+      e.preventDefault();
+      return;
+    }
+    
+    // Second priority: Exit guided tour
+    if (guidedTourManager.isRunning()) {
+      console.log("🛑 User pressed ESC - stopping guided tour");
+      guidedTourManager.stopTour();
+      updateStatusBar('Tour stopped. You can now explore freely!', 3000);
+      e.preventDefault();
+      return;
+    }
   }
 
   // Check if any input field is focused (conversation system)
@@ -102,6 +115,15 @@ function handleKeyDown(e: KeyboardEvent): void {
       if (!keysPressed[" "]) {
         // Only trigger once per press
         console.log("Action button pressed!");
+
+        // Check if guided tour is active - SPACE skips to next step
+        if (guidedTourManager.isRunning()) {
+          console.log("⏭️ Skipping to next tour step");
+          guidedTourManager.skipToNext();
+          keysPressed[e.key] = true;
+          e.preventDefault();
+          return;
+        }
 
         // Check for boss interaction first (only if conversation is not active)
         if (isBossInteractionAvailable() && !gameBoyConversation.isConversationActive()) {
@@ -149,6 +171,14 @@ function handleKeyDown(e: KeyboardEvent): void {
   }
 
   if (dir && !keysPressed[e.key]) {
+    // Prevent manual movement during guided tour
+    if (guidedTourManager.isRunning()) {
+      console.log("🚫 Manual movement disabled during guided tour. Press ESC to exit tour.");
+      updateStatusBar('Manual movement disabled during tour. Press ESC to exit or SPACE to skip step.', 2000);
+      e.preventDefault();
+      return;
+    }
+
     // Mark key as pressed
     keysPressed[e.key] = true;
 

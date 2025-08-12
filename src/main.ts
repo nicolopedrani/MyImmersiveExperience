@@ -13,6 +13,8 @@ import { initializeDesktopControls } from "./modules/desktopControls";
 import { directionalSignalManager } from "./modules/directionalSignals";
 import { getInteractivePositions, isPositionInteractive } from "./modules/tileInteraction";
 import { getTileStory } from "./modules/tileStories";
+import { tourSelectionUI, TourChoice } from "./modules/tourSelection";
+import { guidedTourManager } from "./modules/guidedTour";
 
 // --- Setup canvas ---
 const dummyMap = Array(MAP_HEIGHT_TILES)
@@ -667,7 +669,7 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
   }
 
   // Draw interactive tile hints
-  drawInteractiveTileHints(ctx, tileSize, currentRoom);
+  drawInteractiveTileHints();
 
   // Draw directional signals (before player so player appears on top)
   directionalSignalManager.render(ctx, tileSize, currentRoom.id);
@@ -680,7 +682,7 @@ function draw(ctx: CanvasRenderingContext2D, tileSize: number): void {
   // No more hobby labels - removed as requested
 }
 
-function drawInteractiveTileHints(ctx: CanvasRenderingContext2D, tileSize: number, currentRoom: Room): void {
+function drawInteractiveTileHints(): void {
   // No visual overlays - tiles should look natural
   // Interaction discovery happens through proximity-based status bar hints only
 }
@@ -753,8 +755,41 @@ loadAssets(() => {
   startBackgroundLoading();
 
   console.log("🎯 Interactive tile system initialized!");
-  console.log("💡 Click on glowing tiles to learn more about my experiences!");
+  console.log("💡 Ready to start interactive experience!");
 
-  console.log("Starting game...");
-  startGame();
+  // Show tour selection UI instead of immediately starting
+  showTourSelection();
 });
+
+function showTourSelection(): void {
+  console.log("🎮 Showing tour selection...");
+  
+  tourSelectionUI.show((choice: TourChoice) => {
+    console.log(`✅ User selected: ${choice.type} exploration`);
+    
+    if (choice.type === 'guided') {
+      startGuidedExperience();
+    } else {
+      startFreeExperience();
+    }
+  });
+}
+
+function startGuidedExperience(): void {
+  console.log("🗺️ Starting guided tour experience...");
+  
+  // Start the game first
+  startGame();
+  
+  // Then begin guided tour after a short delay
+  setTimeout(() => {
+    guidedTourManager.startTour();
+  }, 1000);
+}
+
+function startFreeExperience(): void {
+  console.log("🆓 Starting free exploration experience...");
+  
+  // Just start the game normally
+  startGame();
+}
