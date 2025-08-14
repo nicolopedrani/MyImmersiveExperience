@@ -182,77 +182,26 @@ function getModelCapabilityInfo(modelKey: string): string {
 // Browser-specific fallback responses based on compatibility
 function getBrowserSpecificFallbackResponse(question: string): string {
   const browserInfo = getBrowserInfo();
-  const compatInfo = getCompatibilityInfo();
   const lowerQ = question.toLowerCase();
 
-  // Generate context-aware responses based on question type
-  let contextResponse = "";
+  // Use the enhanced fallback system that leverages PROFILE.md data
+  const baseResponse = getFallbackResponse(question);
 
-  // Greeting responses
-  if (
-    lowerQ.includes("hi") ||
-    lowerQ.includes("hello") ||
-    lowerQ.includes("ciao")
-  ) {
-    contextResponse =
-      "Hi there! I'm Nicolo Pedrani. Welcome to my interactive CV! I'm a Data Scientist at Deloitte Consulting and former R&D System Engineer. What would you like to know about my experience?";
-  }
-  // Experience-related questions
-  else if (
-    lowerQ.includes("experience") ||
-    lowerQ.includes("work") ||
-    lowerQ.includes("job")
-  ) {
-    contextResponse =
-      "I currently work as a Data Scientist at Deloitte Consulting, focusing on business analytics, machine learning, and client solutions. Previously, I was an R&D System Engineer at Leonardo SpA, working on defense systems and infrared technologies.";
-  }
-  // Skills questions
-  else if (
-    lowerQ.includes("skill") ||
-    lowerQ.includes("technology") ||
-    lowerQ.includes("programming")
-  ) {
-    contextResponse =
-      "My key skills include Python, R, machine learning, PyTorch, scikit-learn, Power BI, Azure ML, and statistical analysis. I also have experience with MATLAB, Simulink, and system engineering from my defense industry background.";
-  }
-  // Education questions
-  else if (
-    lowerQ.includes("education") ||
-    lowerQ.includes("study") ||
-    lowerQ.includes("university")
-  ) {
-    contextResponse =
-      "I have a strong educational background in engineering and data science, which has equipped me with both theoretical knowledge and practical problem-solving skills across multiple domains.";
-  }
-  // Projects questions
-  else if (lowerQ.includes("project") || lowerQ.includes("achievement")) {
-    contextResponse =
-      "I've worked on diverse projects including NPS analysis, energy cost optimization, fashion retail forecasting, recommendation systems, infrared detection systems, and missile warning technologies. Each project combined technical innovation with real business impact.";
-  }
-  // Default context
-  else {
-    contextResponse =
-      "I'm Nicolo Pedrani - a Data Scientist at Deloitte with R&D experience at Leonardo SpA. I specialize in machine learning, business analytics, and defense systems. What specific aspect would you like to know more about?";
-  }
-
-  // Add browser-specific explanation
-  let explanation = "";
-
+  // Add browser-specific context only when necessary (not for general responses)
+  let browserContext = "";
+  
   if (browserInfo.os === "iOS" && browserInfo.name === "Safari") {
-    explanation =
-      "I'm using pre-written responses because iOS Safari has known compatibility issues with AI models. ";
+    browserContext = "[iOS compatibility mode] ";
   } else if (browserInfo.isMobile && browserInfo.name === "Chrome") {
-    explanation =
-      "I'm using simplified responses on Chrome mobile for better performance. ";
-  } else if (browserInfo.isMobile && browserInfo.name === "Firefox") {
-    explanation = "I'm using basic responses optimized for Firefox mobile. ";
+    browserContext = "[Mobile optimized] ";
   } else if (browserInfo.isMobile) {
-    explanation = `I'm using simplified responses optimized for ${browserInfo.name} mobile. `;
-  } else {
-    explanation = "I'm using fallback responses due to AI system limitations. ";
+    browserContext = `[${browserInfo.name} mobile] `;
   }
 
-  return explanation + contextResponse;
+  // Only add browser context for technical limitations, not for general responses
+  const needsBrowserContext = baseResponse.includes("I have experience") || baseResponse.includes("I'm a professional");
+  
+  return needsBrowserContext ? browserContext + baseResponse : baseResponse;
 }
 
 // Legacy function for backwards compatibility - now uses browser-specific logic
@@ -314,11 +263,16 @@ const AI_MODELS: { [key: string]: any } = {
   },
   distilbert: {
     name: "Xenova/distilbert-base-cased-distilled-squad",
-    description: "DistilBERT model optimized for question-answering",
+    description: "DistilBERT model optimized for question-answering (2024 best practices applied)",
     size: "~65MB",
     type: "qa",
     minMemoryGB: 1,
-    recommendedWebGPU: false,
+    recommendedWebGPU: true, // Enable WebGPU for better performance when available
+    optimizations: {
+      dtype: "q4", // 4-bit quantization for 75% size reduction
+      context_length: 750, // Optimal context length for DistilBERT
+      temperature: 0.1, // Lower temperature for more focused answers
+    },
   },
   qwen: {
     name: "onnx-community/Qwen2.5-0.5B-Instruct",
@@ -352,50 +306,233 @@ const MODEL_CONFIG = {
   useOnlyFallback: false, // Try to load real AI models
 };
 
-// CV context data extracted from the portfolio game content
+// Phase 1: Advanced RAG Context Chunking & Semantic Preparation
+// Semantic chunks with contextual information for better retrieval
+
+interface SemanticChunk {
+  id: string;
+  category: string;
+  title: string;
+  content: string;
+  contextualizedContent: string; // Content with added context for RAG
+  keywords: string[];
+  importance: number; // 1-5 scale for chunk importance
+  relatedChunks: string[]; // IDs of related chunks
+}
+
+// Advanced semantic chunks based on PROFILE.md structure
+const semanticChunks: SemanticChunk[] = [
+  // Professional Overview Chunk
+  {
+    id: "prof_overview",
+    category: "professional",
+    title: "Professional Overview",
+    content: "Data Scientist and System R&D Engineer with expertise in machine learning, computer vision, and infrared optical systems. Experience spans both business analytics and defense technology development.",
+    contextualizedContent: "This describes Nicolo Pedrani's professional identity and core expertise: Data Scientist and System R&D Engineer with expertise in machine learning, computer vision, and infrared optical systems. Experience spans both business analytics and defense technology development.",
+    keywords: ["data scientist", "r&d engineer", "machine learning", "computer vision", "infrared", "analytics", "defense technology"],
+    importance: 5,
+    relatedChunks: ["current_leonardo", "previous_deloitte"]
+  },
+
+  // Current Position - Leonardo SpA
+  {
+    id: "current_leonardo",
+    category: "current_work",
+    title: "Current Role at Leonardo SpA",
+    content: "System R&D Engineer at Leonardo SpA focusing on Infrared (IR) Optical Systems Development with FPA (Focal Plane Array) Photodetectors. Responsibilities include System Design & Requirements Engineering with SRR/PDR/CDR activities, Algorithm Development for Computer Vision with tracking algorithms and optical flow, and Simulation & Testing Environment development with atmospheric modeling.",
+    contextualizedContent: "This describes Nicolo's current professional role: System R&D Engineer at Leonardo SpA focusing on Infrared (IR) Optical Systems Development with FPA (Focal Plane Array) Photodetectors. Key responsibilities include System Design & Requirements Engineering with SRR (System Requirements Review), PDR (Preliminary Design Review), CDR (Critical Design Review) activities, Algorithm Development for Computer Vision with tracking algorithms and optical flow computation, and Simulation & Testing Environment development with atmospheric modeling using radiative transfer models.",
+    keywords: ["leonardo spa", "system r&d engineer", "infrared", "ir systems", "fpa", "photodetectors", "computer vision", "tracking", "optical flow", "srr", "pdr", "cdr", "atmospheric modeling"],
+    importance: 5,
+    relatedChunks: ["technical_skills", "defense_expertise"]
+  },
+
+  // Previous Position - Deloitte
+  {
+    id: "previous_deloitte", 
+    category: "previous_work",
+    title: "Previous Role at Deloitte Consulting",
+    content: "Data Scientist at Deloitte Consulting (2 years ago) working on Fashion Retail Forecasting, NPS Forecasting for Energy Company with exogenous variables, Customer Segmentation & Recommendation Systems, Power BI Dashboard Development, and AI Chatbot Development with LangChain and RAG capabilities.",
+    contextualizedContent: "This describes Nicolo's previous professional experience: Data Scientist at Deloitte Consulting (2 years ago) with key projects including Fashion Retail Forecasting for supply chain optimization, NPS (Net Promoter Score) Forecasting for Energy Company incorporating exogenous variables like energy cost fluctuations, Customer Segmentation & Recommendation Systems with advanced clustering analysis, Power BI Dashboard Development for business intelligence, and AI Chatbot Development using LangChain framework with RAG (Retrieval-Augmented Generation) capabilities.",
+    keywords: ["deloitte consulting", "data scientist", "fashion retail", "nps forecasting", "energy company", "customer segmentation", "recommendation systems", "power bi", "langchain", "rag", "chatbot"],
+    importance: 5,
+    relatedChunks: ["business_analytics", "technical_skills"]
+  },
+
+  // Football Experience
+  {
+    id: "football_experience",
+    category: "personal_interests",
+    title: "Professional Football Career",
+    content: "Played as professional soccer player at AC COMO and trained/coached children in football fundamentals. Lifelong dedication to the sport both as player and mentor.",
+    contextualizedContent: "This describes Nicolo's football/soccer background and passion: Played as professional soccer player at AC COMO and trained/coached children in football fundamentals. Shows lifelong dedication to the sport both as player and mentor, demonstrating teamwork, leadership, and mentoring skills.",
+    keywords: ["football", "soccer", "ac como", "professional player", "coaching", "children", "mentor", "teamwork", "leadership"],
+    importance: 4,
+    relatedChunks: ["leadership_skills", "personal_philosophy"]
+  },
+
+  // Travel Experience  
+  {
+    id: "travel_experience",
+    category: "personal_interests", 
+    title: "International Travel & Cultural Experience",
+    content: "Visited Vietnam, Japan, USA, Australia, Egypt, Poland, Germany, France, Baltic Republics, Italy, and more. Interested in meeting new cultures and people from different backgrounds. Views travel as essential for personal development and global perspective.",
+    contextualizedContent: "This describes Nicolo's extensive international travel experience and cultural awareness: Visited Vietnam, Japan, USA, Australia, Egypt, Poland, Germany, France, Baltic Republics, Italy, and more across multiple continents. Passionate about meeting new cultures and people from different backgrounds. Views travel as essential for personal development and gaining global perspective, which enhances cross-cultural communication and adaptability in professional settings.",
+    keywords: ["travel", "international", "vietnam", "japan", "usa", "australia", "egypt", "germany", "france", "culture", "global perspective", "cross-cultural"],
+    importance: 4,
+    relatedChunks: ["soft_skills", "personal_philosophy"]
+  },
+
+  // Reading Journey
+  {
+    id: "reading_journey",
+    category: "personal_interests",
+    title: "Reading & Continuous Learning",
+    content: "Discovered love for reading through 'The Lord of the Rings' at age 11. Enjoys divulgative essays, non-fiction, educational content. Believes in continuous learning through diverse literary sources.",
+    contextualizedContent: "This describes Nicolo's reading habits and learning philosophy: Discovered love for reading through 'The Lord of the Rings' at age 11, which sparked a lifelong passion for literature. Now enjoys divulgative essays, non-fiction, and educational content. Believes in continuous learning through diverse literary sources, which supports professional development and intellectual curiosity.",
+    keywords: ["reading", "lord of the rings", "books", "learning", "divulgative essays", "non-fiction", "educational", "continuous learning", "intellectual curiosity"],
+    importance: 3,
+    relatedChunks: ["personal_philosophy", "soft_skills"]
+  },
+
+  // Technical Skills
+  {
+    id: "technical_skills",
+    category: "competencies",
+    title: "Technical Skills & Expertise", 
+    content: "Computer Vision (object tracking, optical flow, image processing), Machine Learning (forecasting, classification, recommendation systems), Data Science (statistical analysis, predictive modeling, customer analytics), System Engineering (requirements definition, design reviews, performance testing), Business Intelligence (dashboard development, data visualization, KPI monitoring).",
+    contextualizedContent: "This describes Nicolo's core technical competencies and skills: Computer Vision expertise including object tracking, optical flow, and image processing; Machine Learning capabilities in forecasting, classification, and recommendation systems; Data Science skills in statistical analysis, predictive modeling, and customer analytics; System Engineering experience with requirements definition, design reviews, and performance testing; Business Intelligence proficiency in dashboard development, data visualization, and KPI monitoring.",
+    keywords: ["computer vision", "machine learning", "data science", "system engineering", "business intelligence", "object tracking", "optical flow", "forecasting", "statistical analysis", "dashboard"],
+    importance: 5,
+    relatedChunks: ["current_leonardo", "previous_deloitte"]
+  },
+
+  // Domain Expertise
+  {
+    id: "domain_expertise", 
+    category: "competencies",
+    title: "Domain Expertise",
+    content: "Defense Technology (IR systems, atmospheric modeling, sensor integration), Business Analytics (customer behavior, market forecasting, operational optimization), Software Development (AI/ML frameworks, simulation tools, data pipelines).",
+    contextualizedContent: "This describes Nicolo's specialized domain expertise across multiple industries: Defense Technology including IR (infrared) systems, atmospheric modeling, and sensor integration; Business Analytics covering customer behavior analysis, market forecasting, and operational optimization; Software Development expertise in AI/ML frameworks, simulation tools, and data pipelines.",
+    keywords: ["defense technology", "ir systems", "atmospheric modeling", "business analytics", "customer behavior", "market forecasting", "software development", "ai frameworks", "simulation"],
+    importance: 4,
+    relatedChunks: ["current_leonardo", "previous_deloitte", "technical_skills"]
+  },
+
+  // Soft Skills & Leadership
+  {
+    id: "soft_skills",
+    category: "competencies", 
+    title: "Soft Skills & Leadership",
+    content: "Cross-cultural Communication enhanced through extensive international travel, Leadership demonstrated through coaching and mentoring experiences, Analytical Thinking applied across technical and business domains, Continuous Learning evidenced by diverse reading habits and career transitions.",
+    contextualizedContent: "This describes Nicolo's soft skills and leadership capabilities: Cross-cultural Communication enhanced through extensive international travel experiences; Leadership demonstrated through coaching football and mentoring experiences; Analytical Thinking applied across both technical and business domains; Continuous Learning evidenced by diverse reading habits and successful career transitions between different industries.",
+    keywords: ["cross-cultural communication", "leadership", "coaching", "mentoring", "analytical thinking", "continuous learning", "adaptability"],
+    importance: 4,
+    relatedChunks: ["football_experience", "travel_experience", "reading_journey"]
+  },
+
+  // Personal Philosophy
+  {
+    id: "personal_philosophy",
+    category: "philosophy",
+    title: "Personal Philosophy & Values",
+    content: "Travel and diverse experiences are essential for personal growth. Whether through exploring new countries, reading different perspectives, or mastering new technical skills, I believe in continuous learning and cultural exchange as paths to both professional excellence and personal fulfillment.",
+    contextualizedContent: "This describes Nicolo's core personal philosophy and values: Travel and diverse experiences are essential for personal growth. Whether through exploring new countries, reading different perspectives, or mastering new technical skills, believes in continuous learning and cultural exchange as paths to both professional excellence and personal fulfillment. This philosophy drives both career choices and personal development approach.",
+    keywords: ["personal growth", "continuous learning", "cultural exchange", "professional excellence", "personal fulfillment", "diverse experiences", "philosophy"],
+    importance: 3,
+    relatedChunks: ["travel_experience", "reading_journey", "soft_skills"]
+  }
+];
+
+// Legacy profileContext for backward compatibility
+const profileContext = {
+  professionalOverview: semanticChunks.find(c => c.id === "prof_overview")?.content || "",
+  currentPosition: {
+    company: "Leonardo SpA",
+    role: "System R&D Engineer", 
+    focus: "Infrared (IR) Optical Systems Development",
+    technology: "FPA (Focal Plane Array) Photodetectors",
+    responsibilities: [
+      "System Design & Requirements Engineering - SRR (System Requirements Review), PDR (Preliminary Design Review), CDR (Critical Design Review) activities",
+      "Algorithm Development for Computer Vision - Tracking algorithms for target detection, optical flow computation, performance optimization for real-time applications", 
+      "Simulation & Testing Environment - Development of simulated scenarios, atmospheric modeling using radiative transfer models, analysis of radiative characteristics"
+    ]
+  },
+  previousPosition: {
+    company: "Deloitte Consulting",
+    role: "Data Scientist",
+    duration: "2 years ago",
+    keyProjects: [
+      "Fashion Retail Forecasting - Supply chain management optimization, demand prediction models, inventory planning algorithms",
+      "NPS Forecasting for Energy Company - Net Promoter Score customer loyalty metric, incorporated exogenous variables like energy cost fluctuations, predictive modeling for customer satisfaction trends",
+      "Customer Segmentation & Recommendation Systems - Advanced customer clustering analysis, personalized recommendation engine development, behavioral pattern recognition",
+      "Power BI Dashboard Development - Business intelligence solutions for energy industry client, interactive data visualization, real-time performance monitoring",
+      "AI Chatbot Development - LangChain framework implementation, RAG (Retrieval-Augmented Generation) capabilities integration, natural language processing for customer service automation"
+    ]
+  },
+  personalInterests: {
+    football: {
+      professional: "Played as professional soccer player at AC COMO",
+      coaching: "Trained and coached children in football fundamentals", 
+      passion: "Lifelong dedication to the sport both as player and mentor"
+    },
+    reading: {
+      origin: "Discovered love for reading through 'The Lord of the Rings' at age 11",
+      preferences: "Divulgative essays, non-fiction, educational content",
+      philosophy: "Continuous learning through diverse literary sources"
+    },
+    travel: {
+      countries: "Vietnam, Japan, USA, Australia, Egypt, Poland, Germany, France, Baltic Republics, Italy, and more",
+      interest: "Meeting new cultures and people from different backgrounds",
+      growth: "Views travel as essential for personal development and global perspective"
+    }
+  },
+  coreCompetencies: {
+    technical: [
+      "Computer Vision: Object tracking, optical flow, image processing",
+      "Machine Learning: Forecasting, classification, recommendation systems", 
+      "Data Science: Statistical analysis, predictive modeling, customer analytics",
+      "System Engineering: Requirements definition, design reviews, performance testing",
+      "Business Intelligence: Dashboard development, data visualization, KPI monitoring"
+    ],
+    domain: [
+      "Defense Technology: IR systems, atmospheric modeling, sensor integration",
+      "Business Analytics: Customer behavior, market forecasting, operational optimization", 
+      "Software Development: AI/ML frameworks, simulation tools, data pipelines"
+    ],
+    soft: [
+      "Cross-cultural Communication: Enhanced through extensive international travel",
+      "Leadership: Demonstrated through coaching and mentoring experiences",
+      "Analytical Thinking: Applied across technical and business domains",
+      "Continuous Learning: Evidenced by diverse reading habits and career transitions"
+    ]
+  },
+  philosophy: `Travel and diverse experiences are essential for personal growth. Whether through exploring new countries, reading different perspectives, or mastering new technical skills, I believe in continuous learning and cultural exchange as paths to both professional excellence and personal fulfillment.`
+};
+
+// Legacy CV context for backward compatibility (used in fallback responses)  
 const cvContext: CVContext = {
   personalInfo: `
     Nicolo Pedrani is a professional with experience in Data Science and R&D System Engineering.
     He has worked in consulting, analytics, and infrared defense systems.
     
     Personal interests and hobbies:
-    - Football: Passionate about playing and watching football, enjoys both recreational games and following professional leagues
-    - Extensive Travel: Has visited 14 countries across 4 continents including Italy, France, Germany, United States, Japan, Australia, Vietnam, Maldives, Spain, United Kingdom, Netherlands, Switzerland, Morocco, and Egypt
-    - Reading: Enjoys reading technical literature, business books, and staying updated with industry trends
-    - Cultural exploration: Through travel experiences has gained appreciation for different cultures, cuisines, and perspectives
+    - Football: ${profileContext.personalInterests.football.professional}. ${profileContext.personalInterests.football.coaching}. ${profileContext.personalInterests.football.passion}
+    - Extensive Travel: ${profileContext.personalInterests.travel.countries}
+    - Reading: ${profileContext.personalInterests.reading.origin}. ${profileContext.personalInterests.reading.preferences}
+    - Cultural exploration: ${profileContext.personalInterests.travel.interest}
     - Sports and fitness: Maintains active lifestyle through football and other physical activities
-    - International perspective: Travel experiences have provided global mindset and cultural adaptability valuable in professional settings
+    - International perspective: ${profileContext.personalInterests.travel.growth}
   `,
 
   workExperience: `
-    Deloitte Consulting - Data Science Experience:
-    - NPS (Net Promoter Score) analysis and customer satisfaction analytics
-    - Energy cost optimization projects
-    - Fashion retail time series analysis and forecasting
-    - Supply chain and distribution network mapping
-    - Statistical analysis including forecast histograms and box plot analysis
-    - Power BI dashboard development for business intelligence
-    - Advanced analytics using Python and scikit-learn
-    - Machine learning projects with PyTorch and LangChain
-    - Recommendation system development
-    - Azure Machine Learning and Azure Data Factory implementation
-    - AI chatbot development
-    - Project management with Gantt charts and timeline planning
+    Current Position - ${profileContext.currentPosition.company}: ${profileContext.currentPosition.role}
+    Focus: ${profileContext.currentPosition.focus} with ${profileContext.currentPosition.technology}
+    Key Responsibilities:
+    ${profileContext.currentPosition.responsibilities.map(r => `- ${r}`).join('\n    ')}
 
-    Leonardo SpA - R&D System Engineer Experience:
-    - Infrared (IR) spectrum visualization and analysis
-    - Atmospheric transmission modeling and analysis
-    - Multi-camera array positioning systems
-    - Object detection with bounding boxes using computer vision
-    - Kalman filter implementation for state estimation
-    - Optical flow motion vector analysis
-    - 360-degree missile warning coverage systems
-    - Threat detection interface development
-    - Multiple target tracking systems
-    - MATLAB and Simulink development
-    - IR system architecture design
-    - Requirements specification and documentation
-    - IR detector hardware integration
+    Previous Position - ${profileContext.previousPosition.company}: ${profileContext.previousPosition.role} (${profileContext.previousPosition.duration})
+    Key Projects:
+    ${profileContext.previousPosition.keyProjects.map(p => `- ${p}`).join('\n    ')}
   `,
 
   education: `
@@ -472,9 +609,19 @@ async function loadModelInBackground(modelKey: string): Promise<boolean> {
     const pipelineType =
       model.type === "chat" ? "text-generation" : "question-answering";
 
-    // Configure options for background loading with Phi-3 specific settings
+    // Configure options for background loading with 2024 optimizations
     const pipelineOptions: any = {
       device: hasWebGPUSupport() && model.recommendedWebGPU ? "webgpu" : "wasm",
+      // Apply model-specific optimizations
+      ...(modelKey === "distilbert" && {
+        dtype: model.optimizations?.dtype || "q4", // 4-bit quantization for DistilBERT
+        ...(hasWebGPUSupport() && {
+          execution_providers: ["webgpu"],
+          webgpu_options: {
+            enable_fp16: true,
+          }
+        })
+      }),
       // Phi-3 specific configuration (critical for working properly)
       ...(modelKey === "phi3" && {
         dtype: "q4f16", // Web-optimized quantization format
@@ -595,9 +742,20 @@ async function loadModel(modelKey: string): Promise<boolean> {
     const pipelineType =
       model.type === "chat" ? "text-generation" : "question-answering";
 
-    // Configure options based on model type and available files
+    // Configure options based on model type and 2024 best practices
     const pipelineOptions: any = {
       device: hasWebGPUSupport() && model.recommendedWebGPU ? "webgpu" : "wasm",
+      // Model-specific optimizations based on 2024 research
+      ...(modelKey === "distilbert" && {
+        dtype: model.optimizations?.dtype || "q4", // Apply 4-bit quantization for DistilBERT
+        // Enable WebGPU optimizations if available
+        ...(hasWebGPUSupport() && {
+          execution_providers: ["webgpu"],
+          webgpu_options: {
+            enable_fp16: true, // Use half-precision for better performance
+          }
+        })
+      }),
       // Phi-3 specific configuration (critical for working properly)
       ...(modelKey === "phi3" && {
         dtype: "q4f16", // Web-optimized quantization format
@@ -958,17 +1116,35 @@ export async function answerQuestion(question: string): Promise<string> {
     // Use the appropriate pipeline based on model type
     let result;
     if (currentModelType === "chat") {
-      // For chat models like Qwen, use proper chat template format
+      // Enhanced prompt engineering for chat models with visitor context
       const messages = [
         {
           role: "system",
-          content: `You ARE Nicolo Pedrani. You are NOT an AI assistant. You are a real person with real experiences. Never say "As an AI" or mention being an AI language model.
+          content: `You ARE Nicolo Pedrani speaking directly to a visitor exploring your interactive portfolio. You are NOT an AI assistant - you are the actual person whose portfolio this represents.
 
-You are Nicolo Pedrani, a professional Data Scientist and R&D System Engineer with actual work experience at Deloitte and Leonardo SpA. When asked about YOUR experiences, talk about them in first person as if they are YOUR real professional background.
+Context: You are speaking to a visitor who is browsing your professional portfolio and wants to learn more about your background and experiences. The person you're speaking to should be addressed as "visitor".
 
-Your background: ${relevantContext}
+Professional Identity: ${profileContext.professionalOverview.trim()}
 
-IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep responses to 2-3 clear sentences. Be direct and professional. Never break character or mention being an AI.`,
+Personal Philosophy: "${profileContext.philosophy}"
+
+Relevant Experience Context: ${relevantContext}
+
+Communication Style:
+- Speak in first person (I, my, me) about YOUR actual experiences
+- Address the person as "visitor" (e.g., "Dear visitor", "Welcome visitor", "As I mentioned to you, visitor")
+- Be welcoming and engaging, like meeting a visitor at your portfolio presentation
+- Keep responses 2-4 sentences for completeness while remaining focused
+- Share specific details and insights from your real work
+- Never mention being an AI or assistant
+
+Response Guidelines:
+- Start responses with visitor acknowledgment when appropriate ("Dear visitor", "Welcome visitor", etc.)
+- Reference specific projects, technologies, and companies you've worked with
+- Show passion for your areas of expertise (data science, defense systems, travel, football)
+- Demonstrate the international perspective gained from your extensive travels
+- Connect technical work to broader business impact when relevant
+- Always remember you're speaking TO a visitor, not about yourself in third person`,
         },
         {
           role: "user",
@@ -988,51 +1164,125 @@ IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep re
         console.log("Chat template not available, using Qwen-specific format");
         if (getCurrentModelKey() === "qwen") {
           prompt = `<|im_start|>system
-You ARE Nicolo Pedrani. You are NOT an AI assistant. You are a real person with real experiences. Never say "As an AI" or mention being an AI language model.
+You ARE Nicolo Pedrani speaking to a visitor exploring your portfolio. You are NOT an AI assistant. You are the actual person whose portfolio this represents.
 
-You are Nicolo Pedrani, a professional Data Scientist and R&D System Engineer with actual work experience at Deloitte and Leonardo SpA. When asked about YOUR experiences, talk about them in first person as if they are YOUR real professional background.
+Context: You are speaking to a visitor who wants to learn about your background. Address them as "visitor".
 
-Your background: ${relevantContext}
+Professional Identity: ${profileContext.professionalOverview.trim()}
+Personal Philosophy: "${profileContext.philosophy}"
+Relevant Experience: ${relevantContext}
 
-IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep responses to 2-3 clear sentences. Be direct and professional. Never break character or mention being an AI.<|im_end|>
+IMPORTANT: Address the person as "visitor" (e.g., "Dear visitor", "Welcome visitor"). Speak in first person (I, my, me) about YOUR experiences. Keep responses 2-4 sentences. Never mention being an AI.<|im_end|>
 <|im_start|>user
 ${question}<|im_end|>
 <|im_start|>assistant
 `;
         } else {
           // Fallback for other chat models
-          prompt = `System: You ARE Nicolo Pedrani. You are NOT an AI assistant. You are a real person with real experiences. Never say "As an AI" or mention being an AI language model.
+          prompt = `System: You ARE Nicolo Pedrani speaking to a visitor exploring your portfolio. You are NOT an AI assistant. You are the actual person whose portfolio this represents.
 
-You are Nicolo Pedrani, a professional Data Scientist and R&D System Engineer with actual work experience at Deloitte and Leonardo SpA. When asked about YOUR experiences, talk about them in first person as if they are YOUR real professional background.
+Context: You are speaking to a visitor who wants to learn about your background. Address them as "visitor".
 
-Your background: ${relevantContext}
+Professional Identity: ${profileContext.professionalOverview.trim()}
+Personal Philosophy: "${profileContext.philosophy}"
+Relevant Experience: ${relevantContext}
 
-IMPORTANT: Always respond as Nicolo Pedrani in first person (I, my, me). Keep responses to 2-3 clear sentences. Be direct and professional. Never break character or mention being an AI.
+IMPORTANT: Address the person as "visitor" (e.g., "Dear visitor", "Welcome visitor"). Speak in first person (I, my, me) about YOUR experiences. Keep responses 2-4 sentences. Never mention being an AI.
 
 User: ${question}
 Assistant: `;
         }
       }
 
-      // Generate response using the prompt with parameters optimized for concise responses
-      const output = await aiPipeline(prompt, {
-        max_new_tokens: 80, // Reduced from 128 to encourage shorter responses
+      // Model-specific parameters based on model type and stability
+      const modelKey = getCurrentModelKey();
+      const generationParams: any = {
         do_sample: false,
         return_full_text: false,
         temperature: 0.1, // Lower temperature for more focused responses
-      });
+      };
 
-      // Extract the generated text
+      // Adjust token limits and parameters based on model
+      if (modelKey === "qwen") {
+        // Qwen-specific optimizations for stability
+        generationParams.max_new_tokens = 120; // Reduced for stability
+        generationParams.max_length = 512; // Limit total context + generation
+        generationParams.pad_token_id = 151643; // Qwen-specific pad token
+      } else if (modelKey === "phi3") {
+        // Phi-3 can handle more tokens
+        generationParams.max_new_tokens = 150;
+      } else {
+        // Default for other models
+        generationParams.max_new_tokens = 140;
+      }
+
+      console.log(`🔧 Generation params for ${modelKey}:`, generationParams);
+
+      // Generate response using the prompt with model-specific parameters
+      const output = await aiPipeline(prompt, generationParams);
+
+      // Extract and clean the generated text
+      let rawAnswer = output[0]?.generated_text?.trim() || "";
+      
+      // Clean up model-specific artifacts
+      if (modelKey === "phi3") {
+        // Remove "thinking" artifacts and similar patterns from Phi-3
+        rawAnswer = rawAnswer
+          .replace(/^thinking[:\s]*/i, '') // Remove "thinking:" at start
+          .replace(/\bthinking\b[:\s]*/gi, '') // Remove "thinking" words
+          .replace(/^[*\-\s]*thinking[*\-\s]*/gmi, '') // Remove "thinking" with formatting
+          .replace(/\n\s*thinking[:\s]*/gi, '\n') // Remove mid-text thinking
+          .trim();
+      }
+      
+      // Additional cleanup for both models
+      rawAnswer = rawAnswer
+        .replace(/^\s*[\-\*\•]\s*/, '') // Remove bullet points at start
+        .replace(/^[:\-\s]+/, '') // Remove leading colons/dashes
+        .trim();
+
       result = {
-        answer: output[0]?.generated_text?.trim() || "",
+        answer: rawAnswer,
         score: 1.0, // Chat models don't provide confidence scores
       };
     } else {
-      // Use Q&A pipeline for DistilBERT with mobile error handling
+      // Optimized Q&A pipeline for DistilBERT with visitor-aware context formatting
       try {
-        result = await aiPipeline(question, relevantContext);
+        // Format context optimally for DistilBERT question-answering with visitor context
+        const optimizedContext = `I am Nicolo Pedrani speaking to a visitor exploring my portfolio. I address the visitor directly and welcome them to learn about my background. Professional Background: ${relevantContext}. Personal Philosophy: ${profileContext.philosophy}`;
+        
+        // Use model-specific optimized context length
+        const maxLength = currentModelType === "distilbert" ? 750 : 900;
+        const finalContext = optimizedContext.length > maxLength 
+          ? optimizedContext.substring(0, maxLength) + "..." 
+          : optimizedContext;
+        
+        console.log("🤖 DistilBERT Q&A Input:", {
+          question: question,
+          contextLength: finalContext.length,
+          model: currentModelName
+        });
+        
+        result = await aiPipeline(question, finalContext);
+        
+        // Post-process DistilBERT results for better presentation
+        if (result && result.answer) {
+          // Ensure first-person perspective for consistency
+          let processedAnswer = result.answer.trim();
+          
+          // Convert third-person references to first-person if needed
+          processedAnswer = processedAnswer
+            .replace(/\bNicolo Pedrani\b/g, 'I')
+            .replace(/\bhe is\b/gi, 'I am')
+            .replace(/\bhe has\b/gi, 'I have')
+            .replace(/\bhe works\b/gi, 'I work')
+            .replace(/\bhis\b/gi, 'my');
+          
+          result.answer = processedAnswer;
+        }
+        
       } catch (pipelineError) {
-        console.error("❌ Pipeline execution failed:", pipelineError);
+        console.error("❌ DistilBERT pipeline execution failed:", pipelineError);
         return "I encountered an error processing your question. This might be due to device limitations. Please try a simpler question or use desktop.";
       }
     }
@@ -1069,217 +1319,144 @@ Assistant: `;
   }
 }
 
+// Phase 1: Advanced RAG Context Retrieval using Semantic Chunks with Model-Specific Optimization
 function findRelevantContext(question: string): string {
   const questionLower = question.toLowerCase();
-  let relevantSections: string[] = [];
-
-  // Enhanced keywords for different sections
-  const workKeywords = [
-    "work",
-    "job",
-    "experience",
-    "career",
-    "deloitte",
-    "leonardo",
-    "consulting",
-    "engineer",
-    "project",
-    "company",
-    "professional",
-    "employment",
-  ];
-  const skillsKeywords = [
-    "skill",
-    "technology",
-    "programming",
-    "python",
-    "matlab",
-    "machine learning",
-    "ai",
-    "data science",
-    "technical",
-    "expertise",
-    "tools",
-    "software",
-    "computer vision",
-    "tracking",
-    "optical flow",
-    "infrared",
-    "ir",
-    "fpa",
-    "photodetector",
-    "atmospheric modeling",
-    "radiative transfer",
-    "langchain",
-    "rag",
-    "power bi",
-    "azure",
-    "simulink",
-  ];
-  const educationKeywords = [
-    "education",
-    "study",
-    "learn",
-    "degree",
-    "qualification",
-    "university",
-    "school",
-    "training",
-  ];
-  const personalKeywords = [
-    "hobby",
-    "hobbies",
-    "travel",
-    "football",
-    "personal",
-    "interest",
-    "country",
-    "countries",
-    "visit",
-    "visited",
-    "fun",
-    "free time",
-    "leisure",
-    "sports",
-    "reading",
-    "books",
-  ];
-  const projectKeywords = [
-    "project",
-    "projects",
-    "build",
-    "built",
-    "create",
-    "created",
-    "develop",
-    "developed",
-    "system",
-    "application",
-    "portfolio",
-  ];
-  const travelKeywords = [
-    "travel",
-    "traveling",
-    "travelled",
-    "country",
-    "countries",
-    "visit",
-    "visited",
-    "culture",
-    "cultural",
-    "international",
-    "abroad",
-    "trip",
-    "vacation",
-  ];
-  const footballKeywords = [
-    "football",
-    "soccer",
-    "sport",
-    "sports",
-    "play",
-    "playing",
-    "game",
-    "games",
-    "team",
-    "athletic",
-    "ac como",
-    "como",
-    "professional player",
-    "coach",
-    "coaching",
-    "trainer",
-    "training",
-  ];
-
-  // Check which sections are relevant with priority scoring
-  let sectionPriority: { [key: string]: number } = {};
-
-  if (workKeywords.some((keyword) => questionLower.includes(keyword))) {
-    relevantSections.push(cvContext.workExperience);
-    sectionPriority["work"] = 1;
+  const currentModelKey = getCurrentModelKey();
+  
+  console.log("🔍 RAG Phase 1: Advanced semantic chunk retrieval for:", question, "Model:", currentModelKey);
+  
+  // Model-specific context length limits to prevent crashes
+  let maxContextLength = 900; // Default
+  if (currentModelKey === "qwen") {
+    maxContextLength = 650; // Reduced for Qwen stability
+  } else if (currentModelKey === "phi3") {
+    maxContextLength = 800; // Phi-3 can handle more
+  } else if (currentModelKey === "distilbert") {
+    maxContextLength = 750; // DistilBERT optimized length
   }
-
-  if (skillsKeywords.some((keyword) => questionLower.includes(keyword))) {
-    relevantSections.push(cvContext.skills);
-    sectionPriority["skills"] = 1;
+  
+  console.log(`📏 Context limit for ${currentModelKey}: ${maxContextLength} chars`);
+  
+  // Step 1: Semantic scoring with keyword matching
+  const chunkScores = semanticChunks.map(chunk => {
+    let score = 0;
+    
+    // Keyword matching score (weighted by importance)
+    const keywordMatches = chunk.keywords.filter(keyword => 
+      questionLower.includes(keyword.toLowerCase())
+    ).length;
+    score += keywordMatches * chunk.importance * 2;
+    
+    // Title relevance
+    if (questionLower.includes(chunk.title.toLowerCase())) {
+      score += chunk.importance * 3;
+    }
+    
+    // Category relevance
+    if (questionLower.includes(chunk.category)) {
+      score += chunk.importance * 1.5;
+    }
+    
+    // Content partial matching (substring search)
+    const contentWords = chunk.content.toLowerCase().split(' ');
+    const questionWords = questionLower.split(' ');
+    const contentMatches = questionWords.filter(word => 
+      word.length > 3 && contentWords.some(cWord => cWord.includes(word))
+    ).length;
+    score += contentMatches * chunk.importance * 0.5;
+    
+    return {
+      chunk,
+      score,
+      matchDetails: {
+        keywordMatches,
+        titleMatch: questionLower.includes(chunk.title.toLowerCase()),
+        contentMatches,
+        importance: chunk.importance
+      }
+    };
+  });
+  
+  // Step 2: Sort by relevance score and select top chunks
+  const rankedChunks = chunkScores
+    .sort((a, b) => b.score - a.score)
+    .filter(item => item.score > 0);
+  
+  console.log("📊 Chunk Scoring Results:", rankedChunks.slice(0, 3).map(item => ({
+    id: item.chunk.id,
+    score: item.score,
+    matches: item.matchDetails
+  })));
+  
+  // Step 3: Select optimal chunks within model-specific token budget
+  const selectedChunks: SemanticChunk[] = [];
+  let totalLength = 0;
+  
+  for (const item of rankedChunks) {
+    const chunkContent = item.chunk.contextualizedContent;
+    if (totalLength + chunkContent.length <= maxContextLength) {
+      selectedChunks.push(item.chunk);
+      totalLength += chunkContent.length;
+      
+      // Add related chunks if space allows (more conservative for Qwen)
+      const maxChunks = currentModelKey === "qwen" ? 2 : 3;
+      if (selectedChunks.length < maxChunks) {
+        for (const relatedId of item.chunk.relatedChunks) {
+          const relatedChunk = semanticChunks.find(c => c.id === relatedId);
+          if (relatedChunk && !selectedChunks.includes(relatedChunk)) {
+            if (totalLength + relatedChunk.contextualizedContent.length <= maxContextLength) {
+              selectedChunks.push(relatedChunk);
+              totalLength += relatedChunk.contextualizedContent.length;
+              break; // Add only one related chunk to avoid overwhelm
+            }
+          }
+        }
+      }
+    }
+    
+    if (selectedChunks.length >= (currentModelKey === "qwen" ? 2 : 3)) break;
   }
-
-  if (educationKeywords.some((keyword) => questionLower.includes(keyword))) {
-    relevantSections.push(cvContext.education);
-    sectionPriority["education"] = 1;
-  }
-
-  // Enhanced personal/hobby detection
-  if (
-    personalKeywords.some((keyword) => questionLower.includes(keyword)) ||
-    travelKeywords.some((keyword) => questionLower.includes(keyword)) ||
-    footballKeywords.some((keyword) => questionLower.includes(keyword))
-  ) {
-    relevantSections.push(cvContext.personalInfo);
-    sectionPriority["personal"] = 1;
-  }
-
-  if (projectKeywords.some((keyword) => questionLower.includes(keyword))) {
-    relevantSections.push(cvContext.projects);
-    sectionPriority["projects"] = 1;
-  }
-
-  // If asking about specific hobbies, prioritize personal info
-  if (travelKeywords.some((keyword) => questionLower.includes(keyword))) {
-    // Move personal info to front for travel questions
-    relevantSections = [
-      cvContext.personalInfo,
-      ...relevantSections.filter((s) => s !== cvContext.personalInfo),
-    ];
-  }
-
-  if (footballKeywords.some((keyword) => questionLower.includes(keyword))) {
-    // Move personal info to front for football questions
-    relevantSections = [
-      cvContext.personalInfo,
-      ...relevantSections.filter((s) => s !== cvContext.personalInfo),
-    ];
-  }
-
-  // If no specific section is identified, use work and personal as primary
-  if (relevantSections.length === 0) {
-    relevantSections = [
-      cvContext.workExperience,
-      cvContext.personalInfo,
-      cvContext.skills,
-    ];
-  }
-
-  // Experiment: Try using more context vs targeted context
-  const useFullContext = false; // Set to true to test with all context
-
-  if (useFullContext) {
-    // Use ALL context sections
-    const allContext = Object.values(cvContext)
-      .join(" ")
-      .replace(/\n+/g, " ")
-      .trim();
-    console.log("🔍 Using FULL context:", allContext.length, "characters");
-    return allContext.length > 1500
-      ? allContext.substring(0, 1500) + "..."
-      : allContext;
+  
+  // Step 4: Build contextual response with chunk information
+  let contextParts: string[] = [];
+  
+  // Add professional context if no chunks found
+  if (selectedChunks.length === 0) {
+    console.log("⚠️ No chunks matched, using fallback professional overview");
+    const overviewChunk = semanticChunks.find(c => c.id === "prof_overview");
+    const currentChunk = semanticChunks.find(c => c.id === "current_leonardo");
+    if (overviewChunk) contextParts.push(overviewChunk.contextualizedContent);
+    if (currentChunk && totalLength + currentChunk.contextualizedContent.length <= maxContextLength) {
+      contextParts.push(currentChunk.contextualizedContent);
+    }
   } else {
-    // Use targeted context (current approach)
-    const formattedContext = relevantSections
-      .slice(0, 2)
-      .join(" ")
-      .replace(/\n+/g, " ")
-      .trim();
-    console.log(
-      "🔍 Using TARGETED context:",
-      formattedContext.length,
-      "characters"
-    );
-    return formattedContext.length > 800
-      ? formattedContext.substring(0, 800) + "..."
-      : formattedContext;
+    // Use selected chunks ordered by relevance
+    selectedChunks
+      .sort((a, b) => b.importance - a.importance) // Sort by importance for better ordering
+      .forEach(chunk => {
+        contextParts.push(chunk.contextualizedContent);
+      });
   }
+  
+  let finalContext = contextParts.join(' ').replace(/\s+/g, ' ').trim();
+  
+  // Final safety check for context length
+  if (finalContext.length > maxContextLength) {
+    finalContext = finalContext.substring(0, maxContextLength - 3) + "...";
+    console.log(`⚠️ Context truncated to ${maxContextLength} chars for ${currentModelKey} stability`);
+  }
+  
+  console.log("🎯 RAG Context Selection:", {
+    model: currentModelKey,
+    selectedChunks: selectedChunks.map(c => ({ id: c.id, importance: c.importance })),
+    totalChunks: selectedChunks.length,
+    contextLength: finalContext.length,
+    maxAllowed: maxContextLength,
+    contextPreview: finalContext.substring(0, 150) + "..."
+  });
+  
+  return finalContext;
 }
 
 function enhanceAnswer(answer: string, question: string): string {
@@ -1461,13 +1638,13 @@ function getBestMatchingTopic(topicScores: Record<string, number>): string | nul
 // Enhanced fallback system with varied responses based on PROFILE.md
 const responseVariations: Record<string, string[]> = {
   deloitte: [
-    "At Deloitte Consulting, I worked on diverse data science projects including NPS (Net Promoter Score) forecasting for energy companies incorporating exogenous variables like energy cost fluctuations, fashion retail forecasting for supply chain optimization, and customer segmentation with personalized recommendation systems.",
-    "My Deloitte experience involved advanced analytics: developing LangChain-based RAG (Retrieval-Augmented Generation) chatbots for customer service automation, creating interactive Power BI dashboards for real-time energy industry monitoring, and building predictive models across multiple business scenarios.",
+    "Dear visitor, at Deloitte Consulting I worked on diverse data science projects including NPS (Net Promoter Score) forecasting for energy companies incorporating exogenous variables like energy cost fluctuations, fashion retail forecasting for supply chain optimization, and customer segmentation with personalized recommendation systems.",
+    "My Deloitte experience, visitor, involved advanced analytics: developing LangChain-based RAG (Retrieval-Augmented Generation) chatbots for customer service automation, creating interactive Power BI dashboards for real-time energy industry monitoring, and building predictive models across multiple business scenarios.",
     "At Deloitte, I specialized in business analytics across industries. Key projects included fashion retail demand prediction with inventory optimization, energy company customer satisfaction modeling using external market factors, and sophisticated recommendation engines based on behavioral clustering analysis.",
   ],
   leonardo: [
-    "I currently work as a System R&D Engineer at Leonardo SpA, focusing on infrared optical systems with FPA (Focal Plane Array) photodetectors. My role spans system design with SRR/PDR/CDR reviews and algorithm development for tracking systems and optical flow analysis in real-time defense applications.",
-    "At Leonardo SpA, I develop cutting-edge IR optical systems and computer vision algorithms. My work includes atmospheric modeling using radiative transfer theory, Kalman filter implementation for state estimation, and creating simulated scenarios to test system performance under various conditions.",
+    "Welcome visitor! I currently work as a System R&D Engineer at Leonardo SpA, focusing on infrared optical systems with FPA (Focal Plane Array) photodetectors. My role spans system design with SRR/PDR/CDR reviews and algorithm development for tracking systems and optical flow analysis in real-time defense applications.",
+    "At Leonardo SpA, visitor, I develop cutting-edge IR optical systems and computer vision algorithms. My work includes atmospheric modeling using radiative transfer theory, Kalman filter implementation for state estimation, and creating simulated scenarios to test system performance under various conditions.",
     "My Leonardo role involves two core activities: requirements engineering for defense systems and algorithm development for computer vision. I work extensively with FPA photodetectors, atmospheric radiative characteristics modeling, and tracking algorithms for missile warning and threat detection systems.",
   ],
   skills: [
@@ -1521,40 +1698,33 @@ const responseVariations: Record<string, string[]> = {
 export function getFallbackResponse(question: string): string {
   const questionLower = question.toLowerCase();
 
-  // Get browser information for context-aware messaging
-  const browserInfo = getBrowserInfo();
-  let browserContext = "";
-
-  // Add browser-specific context if this is a fallback due to browser limitations
-  if (browserInfo.os === "iOS" && browserInfo.name === "Safari") {
-    browserContext = "[iOS Safari compatibility mode] ";
-  } else if (browserInfo.isMobile && browserInfo.name === "Chrome") {
-    browserContext = "[Chrome mobile optimized] ";
-  } else if (browserInfo.isMobile) {
-    browserContext = `[${browserInfo.name} mobile mode] `;
-  }
-
-  // Enhanced semantic topic analysis
+  // Enhanced semantic topic analysis using PROFILE.md structure
   const topicScores = analyzeQuestionTopics(questionLower);
   const bestTopic = getBestMatchingTopic(topicScores);
+  
+  // Handle greetings with PROFILE.md context and visitor addressing
+  if (questionLower.includes("hi") || questionLower.includes("hello") || questionLower.includes("ciao") || questionLower.includes("hey")) {
+    const greetingResponses = [
+      `Hello visitor! I'm Nicolo Pedrani. ${profileContext.professionalOverview.trim()} Feel free to ask me about my work at Leonardo SpA, my previous consulting experience at Deloitte, or my hobbies like football and travel!`,
+      `Welcome visitor! Thank you for exploring my interactive portfolio. I'm currently a ${profileContext.currentPosition.role} at ${profileContext.currentPosition.company}, working on ${profileContext.currentPosition.focus}. What would you like to know about my background?`,
+      `Ciao visitor! I'm Nicolo. ${profileContext.personalInterests.travel.growth} I've worked in both data science consulting and defense R&D. Ask me anything about my professional journey or personal interests!`
+    ];
+    return greetingResponses[Math.floor(Math.random() * greetingResponses.length)];
+  }
   
   // Use best matching topic if found with high confidence
   if (bestTopic && responseVariations[bestTopic]) {
     const responses = responseVariations[bestTopic];
-    return browserContext + responses[Math.floor(Math.random() * responses.length)];
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 
   // Enhanced fallback keyword matching for edge cases
   if (questionLower.includes("deloitte")) {
     const responses = responseVariations.deloitte;
-    return (
-      browserContext + responses[Math.floor(Math.random() * responses.length)]
-    );
+    return responses[Math.floor(Math.random() * responses.length)];
   } else if (questionLower.includes("leonardo")) {
     const responses = responseVariations.leonardo;
-    return (
-      browserContext + responses[Math.floor(Math.random() * responses.length)]
-    );
+    return responses[Math.floor(Math.random() * responses.length)];
   } else if (
     questionLower.includes("skill") ||
     questionLower.includes("technology") ||
@@ -1563,9 +1733,7 @@ export function getFallbackResponse(question: string): string {
     questionLower.includes("matlab")
   ) {
     const responses = responseVariations.skills;
-    return (
-      browserContext + responses[Math.floor(Math.random() * responses.length)]
-    );
+    return responses[Math.floor(Math.random() * responses.length)];
   } else if (
     questionLower.includes("football") ||
     questionLower.includes("soccer") ||
@@ -1573,9 +1741,7 @@ export function getFallbackResponse(question: string): string {
     questionLower.includes("coach")
   ) {
     const responses = responseVariations.football;
-    return (
-      browserContext + responses[Math.floor(Math.random() * responses.length)]
-    );
+    return responses[Math.floor(Math.random() * responses.length)];
   } else if (
     questionLower.includes("travel") ||
     questionLower.includes("country") ||
@@ -1583,9 +1749,7 @@ export function getFallbackResponse(question: string): string {
     questionLower.includes("culture")
   ) {
     const responses = responseVariations.travel;
-    return (
-      browserContext + responses[Math.floor(Math.random() * responses.length)]
-    );
+    return responses[Math.floor(Math.random() * responses.length)];
   } else if (
     questionLower.includes("reading") ||
     questionLower.includes("book") ||
@@ -1593,45 +1757,34 @@ export function getFallbackResponse(question: string): string {
     questionLower.includes("lord of the rings")
   ) {
     const responses = responseVariations.reading;
-    return (
-      browserContext + responses[Math.floor(Math.random() * responses.length)]
-    );
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 
-  // Single responses for less common topics
+  // Enhanced responses using PROFILE.md structured data
   else if (
     questionLower.includes("experience") ||
     questionLower.includes("work")
   ) {
-    return (
-      browserContext +
-      "I have experience in both Data Science consulting at Deloitte and R&D System Engineering at Leonardo SpA. I've worked on projects ranging from business analytics and machine learning to infrared defense systems and computer vision."
-    );
+    return `Currently I'm a ${profileContext.currentPosition.role} at ${profileContext.currentPosition.company}, focusing on ${profileContext.currentPosition.focus} with ${profileContext.currentPosition.technology}. Previously, I worked as a ${profileContext.previousPosition.role} at ${profileContext.previousPosition.company}, handling diverse projects from business analytics to machine learning solutions.`;
   } else if (
     questionLower.includes("reading") ||
     questionLower.includes("book")
   ) {
-    return (
-      browserContext +
-      "I discovered my love for reading through 'The Lord of the Rings' when I was 11 years old. Now I'm an avid reader who enjoys divulgative essays and technical literature. Reading helps me stay current with industry trends and broaden my perspective beyond just technical topics."
-    );
+    return `${profileContext.personalInterests.reading.origin}. Now I'm passionate about ${profileContext.personalInterests.reading.preferences}. ${profileContext.personalInterests.reading.philosophy}`;
   } else if (
     questionLower.includes("hobby") ||
     questionLower.includes("personal") ||
     questionLower.includes("interest")
   ) {
-    return (
-      browserContext +
-      "My main hobbies are football, traveling, and reading. These interests have shaped me both personally and professionally - football taught me teamwork, travel gave me cultural awareness, and reading keeps me intellectually curious."
-    );
+    const football = profileContext.personalInterests.football;
+    const travel = profileContext.personalInterests.travel;
+    const reading = profileContext.personalInterests.reading;
+    return `My main passions are football, travel, and reading. ${football.professional} and ${football.coaching}. I've visited ${travel.countries}, which ${travel.growth}. ${reading.origin} and continue reading for ${reading.philosophy}`;
   } else if (
     questionLower.includes("culture") ||
     questionLower.includes("international")
   ) {
-    return (
-      browserContext +
-      "My international travel experiences have given me a global perspective that's valuable in today's interconnected world. I've experienced everything from the tech innovation in Japan to the rich history of Morocco."
-    );
+    return `${profileContext.personalInterests.travel.countries}. ${profileContext.personalInterests.travel.interest} ${profileContext.personalInterests.travel.growth} This international exposure is valuable in today's interconnected professional world.`;
   } else if (
     questionLower.includes("nps") ||
     questionLower.includes("net promoter") ||
@@ -1643,15 +1796,9 @@ export function getFallbackResponse(question: string): string {
     questionLower.includes("rag") ||
     questionLower.includes("retrieval augmented")
   ) {
-    return (
-      browserContext +
-      "I work with various technical acronyms and methodologies: NPS (Net Promoter Score) for customer analytics, SRR/PDR/CDR (System/Preliminary/Critical Design Reviews) for engineering processes, FPA (Focal Plane Array) photodetectors for IR systems, and RAG (Retrieval-Augmented Generation) for advanced AI applications."
-    );
+    return `I work with specialized technical methodologies across both my current and previous roles. At ${profileContext.currentPosition.company}, I handle ${profileContext.currentPosition.responsibilities[0]}. At ${profileContext.previousPosition.company}, I worked with technologies like RAG (Retrieval-Augmented Generation) and various analytics frameworks. These acronyms represent the depth of technical expertise I've developed across defense systems and business consulting.`;
   } else {
-    return (
-      browserContext +
-      "I'm a professional with diverse experience in data science consulting and R&D engineering. Feel free to ask about my work at Deloitte, Leonardo SpA, my technical skills, my hobbies, or my travel experiences!"
-    );
+    return `${profileContext.professionalOverview.trim()} I'm currently at ${profileContext.currentPosition.company} as a ${profileContext.currentPosition.role}, and I love discussing my work, travel experiences, or any technical topics. What interests you most?`;
   }
 }
 

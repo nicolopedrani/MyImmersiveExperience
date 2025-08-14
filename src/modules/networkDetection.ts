@@ -10,19 +10,24 @@ interface NetworkInfo {
 // Test files for speed measurement - using DistilBERT model as primary benchmark
 const TEST_FILES = [
   {
+    url: "https://huggingface.co/Tesslate/UIGEN-X-32B-0727/resolve/main/tokenizer.json", // ~65MB DistilBERT model
+    sizeKB: 10 * 1024, // ~10MB for very accurate speed measurement
+    description: "UI Gen X tokenizer.json (11MB)",
+  },
+  {
     url: "https://huggingface.co/distilbert-base-uncased/resolve/main/pytorch_model.bin", // ~65MB DistilBERT model
     sizeKB: 66560, // ~65MB for very accurate speed measurement
-    description: "DistilBERT PyTorch model (65MB)"
+    description: "DistilBERT PyTorch model (65MB)",
   },
   {
     url: "/assets/CV_Pedrani.pdf", // Local 6MB PDF fallback
     sizeKB: 6144, // ~6MB backup test
-    description: "Local CV PDF (6MB)"
+    description: "Local CV PDF (6MB)",
   },
   {
     url: "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js",
     sizeKB: 71, // Small reliable CDN fallback (~71KB)
-    description: "Lodash CDN (71KB)"
+    description: "Lodash CDN (71KB)",
   },
 ];
 
@@ -104,7 +109,7 @@ async function performSpeedTest(): Promise<{
 
       const response = await fetch(testFile.url, {
         cache: "no-store", // Ensure fresh download
-        method: "GET", 
+        method: "GET",
         signal: AbortSignal.timeout(60000), // 60 second timeout for large model
       });
 
@@ -239,7 +244,7 @@ export function getDownloadEstimate(
   // Calculate time: fileSize(MB) / speed(MB/s) = time(seconds)
   const estimatedSeconds = fileSizeMB / speedMBps;
   const timeMinutes = estimatedSeconds / 60;
-  
+
   // Debug logging
   console.log(`📊 Download estimate calculation:`);
   console.log(`   fileSizeGB: ${fileSizeGB} GB`);
@@ -247,8 +252,12 @@ export function getDownloadEstimate(
   console.log(`   speedMbps: ${speedMbps} Mbps`);
   console.log(`   speedMBps: ${speedMBps.toFixed(2)} MB/s`);
   console.log(`   estimatedSeconds: ${estimatedSeconds.toFixed(1)} seconds`);
-  console.log(`   realisticSeconds: ${estimatedSeconds.toFixed(1)} seconds (same as estimated)`);
-  
+  console.log(
+    `   realisticSeconds: ${estimatedSeconds.toFixed(
+      1
+    )} seconds (same as estimated)`
+  );
+
   const timeSeconds = estimatedSeconds;
 
   let timeFormatted: string;
