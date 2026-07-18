@@ -47,8 +47,14 @@ checks weekly, and the exception should be removed when a compatible upstream re
 ## Browser policy
 
 The curated experience targets current and previous stable Chrome, Edge, Firefox and Safari releases and is exercised
-through Chromium, Firefox, WebKit and mobile Chromium Playwright projects. Qwen is capability-gated and requires real
-hardware validation; devices without suitable WebGPU retain the full curated experience.
+through desktop Chromium, Firefox and WebKit plus mobile Chromium and WebKit Playwright projects. Qwen is
+capability-gated and requires real hardware validation; devices without suitable WebGPU retain the full curated
+experience.
+
+On phone-sized or short viewports, the chat and model-consent dialogs use a full-screen layout. Their dimensions follow
+`VisualViewport` when available, fall back to dynamic viewport units, respect device safe areas and keep only the
+message list scrollable. Mobile regression coverage uses Pixel 7 Chromium and iPhone SE WebKit profiles in portrait,
+landscape and a keyboard-sized viewport.
 
 ## Recorded WebGPU benchmark
 
