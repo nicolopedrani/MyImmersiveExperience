@@ -1,6 +1,27 @@
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+
+function isMobileProject(name: string): boolean {
+  return name === "mobile-chromium" || name === "mobile-webkit";
+}
+
+async function expectInsideVisualViewport(locator: Locator): Promise<void> {
+  await expect(locator).toBeVisible();
+  const bounds = await locator.evaluate((element) => {
+    const rectangle = element.getBoundingClientRect();
+    const viewport = window.visualViewport;
+    const viewportTop = viewport?.offsetTop ?? 0;
+    return {
+      top: rectangle.top,
+      bottom: rectangle.bottom,
+      viewportTop,
+      viewportBottom: viewportTop + (viewport?.height ?? window.innerHeight),
+    };
+  });
+  expect(bounds.top).toBeGreaterThanOrEqual(bounds.viewportTop - 1);
+  expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportBottom + 1);
+}
 
 async function installFakeQwen(
   page: Page,
@@ -96,6 +117,71 @@ test("answers from curated content without model requests before consent", async
   expect(modelRequests).toEqual([]);
 });
 
+test("keeps every primary chat control inside mobile portrait and landscape viewports", async ({ page }, testInfo) => {
+  test.skip(!isMobileProject(testInfo.project.name), "Mobile dialog geometry is covered in mobile browser projects.");
+  await page.goto("");
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+
+  const dialog = page.locator("#chat-dialog");
+  const close = page.getByRole("button", { name: "Close conversation" });
+  const mode = page.getByRole("button", { name: "Enable local Qwen" });
+  const input = page.getByLabel("Ask about the portfolio");
+  const send = page.getByRole("button", { name: "Send" });
+  await expect(page.locator("#chat-cancel")).toBeHidden();
+  for (const control of [close, mode, input, send]) await expectInsideVisualViewport(control);
+  await expect(close).toBeFocused();
+  await expect.poll(() => dialog.evaluate((element) => element.scrollHeight - element.clientHeight)).toBe(0);
+  await expect(dialog).toHaveJSProperty("scrollTop", 0);
+  await expect.poll(() => mode.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+
+  await page.setViewportSize({ width: 667, height: 375 });
+  for (const control of [close, mode, input, send]) await expectInsideVisualViewport(control);
+  await expect(dialog).toHaveJSProperty("scrollTop", 0);
+});
+
+test("tracks a keyboard-sized visual viewport without hiding the composer or Qwen toolbar", async ({ page }, testInfo) => {
+  test.skip(!isMobileProject(testInfo.project.name), "Visual viewport resizing is covered in mobile browser projects.");
+  await page.goto("");
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  const input = page.getByLabel("Ask about the portfolio");
+  await input.focus();
+  await page.setViewportSize({ width: 375, height: 320 });
+
+  const dialog = page.locator("#chat-dialog");
+  await expect
+    .poll(() => dialog.evaluate((element) => Math.round(element.getBoundingClientRect().height)))
+    .toBe(320);
+  await expectInsideVisualViewport(page.getByRole("button", { name: "Enable local Qwen" }));
+  await expectInsideVisualViewport(input);
+  await expectInsideVisualViewport(page.getByRole("button", { name: "Send" }));
+  await expect(dialog).toHaveJSProperty("scrollTop", 0);
+});
+
+test("keeps Qwen consent, progress and cancellation actionable on mobile", async ({ page }, testInfo) => {
+  test.skip(!isMobileProject(testInfo.project.name), "Mobile Qwen controls are covered in mobile browser projects.");
+  await installFakeQwen(page, { holdLoading: true });
+  await page.goto("");
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  const mode = page.getByRole("button", { name: "Enable local Qwen" });
+  await mode.click();
+  const confirm = page.getByRole("button", { name: "Download and enable" });
+  const keepCurated = page.getByRole("button", { name: "Keep curated answers" });
+  await expect(confirm).toBeEnabled();
+  await expectInsideVisualViewport(confirm);
+  await expectInsideVisualViewport(keepCurated);
+
+  await confirm.click();
+  const progress = page.getByRole("progressbar", { name: "Local Qwen model download progress" });
+  const cancel = page.getByRole("button", { name: "Cancel download" });
+  await expect(progress).toHaveJSProperty("value", 50);
+  await expectInsideVisualViewport(progress);
+  await expectInsideVisualViewport(cancel);
+  await cancel.click();
+  await expect(page.locator("#model-consent-dialog")).not.toHaveAttribute("open", "");
+  await expect(mode).toBeFocused();
+  await expect(mode).toBeEnabled();
+});
+
 test("simulates consent, progress and grounded local Qwen generation", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "Worker integration is covered once in desktop Chromium.");
   await installFakeQwen(page);
@@ -166,8 +252,8 @@ test("keeps deep links in sync with browser history", async ({ page }) => {
 test("moves keyboard users to the contextual station navigator", async ({ page }, testInfo) => {
   await page.goto("");
   const skipLink = page.getByRole("link", { name: "Skip to the room stations" });
-  if (testInfo.project.name === "webkit") {
-    // macOS WebKit follows the system preference that may exclude links from the Tab sequence.
+  if (testInfo.project.name.includes("webkit")) {
+    // WebKit follows platform keyboard preferences that may exclude links from the Tab sequence.
     await skipLink.focus();
   } else {
     await page.keyboard.press("Tab");
@@ -191,6 +277,37 @@ test("has no critical or serious automated accessibility violations", async ({ p
   const results = await new AxeBuilder({ page }).analyze();
   const serious = results.violations.filter((violation) => ["critical", "serious"].includes(violation.impact ?? ""));
   expect(serious).toEqual([]);
+});
+
+test("has no serious accessibility violations in mobile chat and consent dialogs", async ({ page }, testInfo) => {
+  test.skip(!isMobileProject(testInfo.project.name), "Open mobile dialogs are covered in mobile browser projects.");
+  await installFakeQwen(page);
+  await page.goto("");
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  const chatResults = await new AxeBuilder({ page }).analyze();
+  expect(chatResults.violations.filter((violation) => ["critical", "serious"].includes(violation.impact ?? ""))).toEqual([]);
+  await page.getByRole("button", { name: "Enable local Qwen" }).click();
+  await expect(page.getByRole("button", { name: "Download and enable" })).toBeEnabled();
+  const consentResults = await new AxeBuilder({ page }).analyze();
+  expect(consentResults.violations.filter((violation) => ["critical", "serious"].includes(violation.impact ?? ""))).toEqual([]);
+});
+
+test("renders a stable full-screen mobile chat", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "The mobile visual baseline uses Chromium once.");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto("");
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  const dialog = page.locator("#chat-dialog");
+  const textContent = dialog.locator(
+    ".eyebrow, h2, .dialog-intro, button, .model-status, .chat-message__label, .chat-message p, .chat-form label",
+  );
+  await expect(dialog).toHaveScreenshot("chat-mobile.png", {
+    animations: "disabled",
+    mask: [textContent],
+    maskColor: "#2a6f72",
+    maxDiffPixelRatio: 0.02,
+  });
 });
 
 test("renders deterministic room dioramas", async ({ page }, testInfo) => {

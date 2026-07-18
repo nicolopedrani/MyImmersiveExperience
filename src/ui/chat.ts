@@ -70,6 +70,7 @@ function readHistory(): StoredMessage[] {
 export class PortfolioChat {
   private readonly dialog = requiredElement<HTMLDialogElement>("chat-dialog");
   private readonly consentDialog = requiredElement<HTMLDialogElement>("model-consent-dialog");
+  private readonly closeButton = requiredElement<HTMLButtonElement>("chat-close");
   private readonly messages = requiredElement<HTMLOListElement>("chat-messages");
   private readonly form = requiredElement<HTMLFormElement>("chat-form");
   private readonly input = requiredElement<HTMLInputElement>("chat-input");
@@ -88,10 +89,12 @@ export class PortfolioChat {
   private busy = false;
   private loadingModel = false;
   private downloadStartedAt: number | undefined;
+  private viewportSyncFrame: number | undefined;
 
   constructor(private readonly openEntry: OpenEntry) {
     this.updateModeButton();
     this.bindEvents();
+    this.bindViewport();
     this.modelController.setProgressListener((progress) => {
       this.updateModelProgress(progress);
       this.setModelStatus(progress.status);
@@ -99,6 +102,7 @@ export class PortfolioChat {
   }
 
   open(): void {
+    this.syncDialogViewport();
     openDialog(this.dialog);
     if (!this.hasRenderedHistory) {
       if (this.storedMessages.length === 0) {
@@ -117,7 +121,10 @@ export class PortfolioChat {
       ]);
       this.hasRenderedHistory = true;
     }
-    window.setTimeout(() => this.input.focus(), 0);
+    window.setTimeout(() => {
+      if (window.matchMedia("(pointer: coarse)").matches) this.closeButton.focus();
+      else this.input.focus();
+    }, 0);
   }
 
   close(): void {
@@ -125,7 +132,7 @@ export class PortfolioChat {
   }
 
   private bindEvents(): void {
-    requiredElement<HTMLButtonElement>("chat-close").addEventListener("click", () => this.close());
+    this.closeButton.addEventListener("click", () => this.close());
     this.dialog.addEventListener("click", (event) => {
       if (event.target === this.dialog) this.close();
     });
@@ -156,6 +163,7 @@ export class PortfolioChat {
         this.stopModelProgress("Download cancelled");
       }
       safeCloseDialog(this.consentDialog);
+      this.modeButton.focus();
     });
     requiredElement<HTMLButtonElement>("model-consent-confirm").addEventListener("click", () => {
       void this.enableLocalMode();
@@ -165,12 +173,37 @@ export class PortfolioChat {
     });
   }
 
+  private bindViewport(): void {
+    this.syncDialogViewport();
+    window.addEventListener("resize", this.syncDialogViewport, { passive: true });
+    window.visualViewport?.addEventListener("resize", this.syncDialogViewport, { passive: true });
+    window.visualViewport?.addEventListener("scroll", this.syncDialogViewport, { passive: true });
+  }
+
+  private readonly syncDialogViewport = (): void => {
+    if (this.viewportSyncFrame !== undefined) return;
+    this.viewportSyncFrame = window.requestAnimationFrame(() => {
+      this.viewportSyncFrame = undefined;
+      const viewport = window.visualViewport;
+      const values = {
+        "--dialog-viewport-height": `${viewport?.height ?? window.innerHeight}px`,
+        "--dialog-viewport-width": `${viewport?.width ?? window.innerWidth}px`,
+        "--dialog-viewport-offset-top": `${viewport?.offsetTop ?? 0}px`,
+        "--dialog-viewport-offset-left": `${viewport?.offsetLeft ?? 0}px`,
+      };
+      [this.dialog, this.consentDialog].forEach((dialog) => {
+        Object.entries(values).forEach(([property, value]) => dialog.style.setProperty(property, value));
+      });
+    });
+  };
+
   private async offerLocalMode(): Promise<void> {
     const detail = requiredElement<HTMLParagraphElement>("model-capability-detail");
     const confirm = requiredElement<HTMLButtonElement>("model-consent-confirm");
     this.hideModelProgress();
     detail.textContent = "Checking WebGPU and browser storage…";
     confirm.disabled = true;
+    this.syncDialogViewport();
     openDialog(this.consentDialog);
     const capability = await detectLocalModelCapability();
     const storage = capability.availableStorageBytes
@@ -195,6 +228,7 @@ export class PortfolioChat {
       this.updateModeButton();
       this.setModelStatus("Qwen3 0.6B is ready. Answers are generated locally from verified portfolio context.");
       safeCloseDialog(this.consentDialog);
+      this.modeButton.focus();
       this.completeModelProgress();
     } catch (error) {
       if (!this.loadingModel) return;
@@ -298,7 +332,10 @@ export class PortfolioChat {
     }
 
     this.messages.append(item);
-    item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    this.messages.scrollTo({
+      top: this.messages.scrollHeight,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
   }
 
   private renderSuggestions(suggestions: readonly string[]): void {

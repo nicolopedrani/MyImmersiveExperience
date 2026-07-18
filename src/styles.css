@@ -185,6 +185,10 @@ a {
   opacity: 0.55;
 }
 
+.button[hidden] {
+  display: none;
+}
+
 .button--gold {
   color: var(--ink);
   background: var(--gold);
@@ -571,10 +575,26 @@ dialog::backdrop {
 }
 
 .chat-dialog {
+  --dialog-viewport-height: 100vh;
   width: min(760px, calc(100vw - 24px));
-  max-height: min(820px, calc(100vh - 24px));
+  height: min(820px, calc(var(--dialog-viewport-height) - 24px));
+  max-height: min(820px, calc(var(--dialog-viewport-height) - 24px));
   padding: 0;
   overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.chat-dialog[open] {
+  display: grid;
+  grid-template:
+    "header" auto
+    "intro" auto
+    "toolbar" auto
+    "status" auto
+    "progress" auto
+    "messages" minmax(0, 1fr)
+    "suggestions" auto
+    "form" auto / minmax(0, 1fr);
 }
 
 .dialog-header {
@@ -586,6 +606,10 @@ dialog::backdrop {
   color: var(--paper);
   background: var(--ink);
   border-bottom: 3px solid var(--gold);
+}
+
+.chat-dialog .dialog-header {
+  grid-area: header;
 }
 
 .dialog-header .eyebrow {
@@ -616,6 +640,7 @@ dialog::backdrop {
 }
 
 .dialog-intro {
+  grid-area: intro;
   margin-top: 16px;
   margin-bottom: 12px;
   color: var(--ink-soft);
@@ -624,6 +649,7 @@ dialog::backdrop {
 
 .chat-toolbar {
   display: flex;
+  grid-area: toolbar;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -637,6 +663,10 @@ dialog::backdrop {
   font: 700 0.75rem/1.4 ui-monospace, monospace;
 }
 
+#model-status {
+  grid-area: status;
+}
+
 .model-progress {
   margin: 12px 0;
   padding: 10px 12px;
@@ -646,6 +676,7 @@ dialog::backdrop {
 }
 
 .chat-dialog .model-progress {
+  grid-area: progress;
   margin: 0 20px 12px;
 }
 
@@ -682,13 +713,16 @@ dialog::backdrop {
 
 .chat-messages {
   display: flex;
+  grid-area: messages;
   flex-direction: column;
   gap: 12px;
-  min-height: 210px;
-  max-height: 330px;
+  min-height: 0;
+  max-height: none;
   margin: 0;
   padding: 16px 20px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   list-style: none;
   border-top: 2px solid var(--ink);
   border-bottom: 2px solid var(--ink);
@@ -740,12 +774,14 @@ dialog::backdrop {
 
 .chat-suggestions {
   display: flex;
+  grid-area: suggestions;
   flex-wrap: wrap;
   gap: 7px;
   padding: 12px 0 2px;
 }
 
 .chat-form {
+  grid-area: form;
   padding: 12px 0 20px;
 }
 
@@ -756,8 +792,13 @@ dialog::backdrop {
 }
 
 .chat-form > div {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
+}
+
+#chat-cancel {
+  grid-column: 1 / -1;
 }
 
 .chat-form input {
@@ -771,8 +812,19 @@ dialog::backdrop {
 }
 
 .consent-dialog {
+  --dialog-viewport-height: 100vh;
   width: min(580px, calc(100vw - 24px));
+  max-height: min(720px, calc(var(--dialog-viewport-height) - 24px));
   padding: clamp(22px, 4vw, 38px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@supports (height: 100dvh) {
+  .chat-dialog,
+  .consent-dialog {
+    --dialog-viewport-height: 100dvh;
+  }
 }
 
 .consent-dialog h2 {
@@ -888,11 +940,152 @@ dialog::backdrop {
   .chat-toolbar,
   .chat-form > div {
     align-items: stretch;
-    flex-direction: column;
   }
 
   .chat-message {
     width: 96%;
+  }
+}
+
+@media (max-width: 760px), (max-height: 560px) {
+  .chat-dialog,
+  .consent-dialog {
+    position: fixed;
+    top: var(--dialog-viewport-offset-top, 0px);
+    right: auto;
+    bottom: auto;
+    left: var(--dialog-viewport-offset-left, 0px);
+    width: var(--dialog-viewport-width, 100vw);
+    max-width: none;
+    height: var(--dialog-viewport-height, 100vh);
+    max-height: none;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .chat-dialog .dialog-header {
+    padding:
+      max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      12px
+      max(12px, env(safe-area-inset-left));
+  }
+
+  .dialog-intro,
+  .model-status,
+  .chat-toolbar,
+  .chat-form,
+  .chat-suggestions {
+    margin-right: max(12px, env(safe-area-inset-right));
+    margin-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .dialog-intro {
+    margin-top: 10px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .chat-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .chat-toolbar .button {
+    min-width: 0;
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .chat-toolbar .text-button {
+    white-space: nowrap;
+    font-size: 0.75rem;
+  }
+
+  .model-status {
+    min-height: 0;
+    margin-top: 7px;
+    margin-bottom: 7px;
+  }
+
+  .chat-dialog .model-progress {
+    margin-right: max(12px, env(safe-area-inset-right));
+    margin-bottom: 8px;
+    margin-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .chat-messages {
+    padding: 12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left));
+  }
+
+  .chat-suggestions {
+    flex-wrap: nowrap;
+    padding: 8px 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .chat-suggestions button {
+    flex: 0 0 auto;
+  }
+
+  .chat-form {
+    padding-top: 8px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .chat-dialog button,
+  .consent-dialog button,
+  .chat-form input {
+    min-height: 44px;
+  }
+
+  .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .consent-dialog {
+    padding:
+      max(20px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      max(20px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .consent-dialog .dialog-actions {
+    position: sticky;
+    z-index: 1;
+    bottom: 0;
+    padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+    border-top: 2px solid var(--ink);
+    background: var(--paper);
+  }
+}
+
+@media (max-height: 560px) {
+  .chat-dialog .dialog-header {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: 8px;
+  }
+
+  .chat-dialog .dialog-header .eyebrow,
+  .chat-dialog .dialog-intro,
+  .chat-dialog .chat-suggestions {
+    display: none;
+  }
+
+  .chat-dialog .model-status {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  .chat-form {
+    padding-top: 6px;
   }
 }
 
