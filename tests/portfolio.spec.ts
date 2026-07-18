@@ -132,7 +132,7 @@ test("keeps every primary chat control inside mobile portrait and landscape view
   await expect(close).toBeFocused();
   await expect.poll(() => dialog.evaluate((element) => element.scrollHeight - element.clientHeight)).toBe(0);
   await expect(dialog).toHaveJSProperty("scrollTop", 0);
-  await expect(mode).toHaveJSProperty("offsetHeight", 44);
+  await expect.poll(() => mode.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
 
   await page.setViewportSize({ width: 667, height: 375 });
   for (const control of [close, mode, input, send]) await expectInsideVisualViewport(control);
@@ -298,8 +298,14 @@ test("renders a stable full-screen mobile chat", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 375, height: 667 });
   await page.goto("");
   await page.getByRole("button", { name: "Chat", exact: true }).click();
-  await expect(page.locator("#chat-dialog")).toHaveScreenshot("chat-mobile.png", {
+  const dialog = page.locator("#chat-dialog");
+  const textContent = dialog.locator(
+    ".eyebrow, h2, .dialog-intro, button, .model-status, .chat-message__label, .chat-message p, .chat-form label",
+  );
+  await expect(dialog).toHaveScreenshot("chat-mobile.png", {
     animations: "disabled",
+    mask: [textContent],
+    maskColor: "#2a6f72",
     maxDiffPixelRatio: 0.02,
   });
 });

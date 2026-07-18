@@ -89,6 +89,7 @@ export class PortfolioChat {
   private busy = false;
   private loadingModel = false;
   private downloadStartedAt: number | undefined;
+  private viewportSyncFrame: number | undefined;
 
   constructor(private readonly openEntry: OpenEntry) {
     this.updateModeButton();
@@ -180,15 +181,19 @@ export class PortfolioChat {
   }
 
   private readonly syncDialogViewport = (): void => {
-    const viewport = window.visualViewport;
-    const values = {
-      "--dialog-viewport-height": `${viewport?.height ?? window.innerHeight}px`,
-      "--dialog-viewport-width": `${viewport?.width ?? window.innerWidth}px`,
-      "--dialog-viewport-offset-top": `${viewport?.offsetTop ?? 0}px`,
-      "--dialog-viewport-offset-left": `${viewport?.offsetLeft ?? 0}px`,
-    };
-    [this.dialog, this.consentDialog].forEach((dialog) => {
-      Object.entries(values).forEach(([property, value]) => dialog.style.setProperty(property, value));
+    if (this.viewportSyncFrame !== undefined) return;
+    this.viewportSyncFrame = window.requestAnimationFrame(() => {
+      this.viewportSyncFrame = undefined;
+      const viewport = window.visualViewport;
+      const values = {
+        "--dialog-viewport-height": `${viewport?.height ?? window.innerHeight}px`,
+        "--dialog-viewport-width": `${viewport?.width ?? window.innerWidth}px`,
+        "--dialog-viewport-offset-top": `${viewport?.offsetTop ?? 0}px`,
+        "--dialog-viewport-offset-left": `${viewport?.offsetLeft ?? 0}px`,
+      };
+      [this.dialog, this.consentDialog].forEach((dialog) => {
+        Object.entries(values).forEach(([property, value]) => dialog.style.setProperty(property, value));
+      });
     });
   };
 
