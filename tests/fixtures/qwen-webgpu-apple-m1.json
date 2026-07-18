@@ -1,0 +1,35 @@
+{
+  "recordedAt": "2026-07-18T10:57:38.501Z",
+  "environment": {
+    "device": "MacBook Air (M1, 8 GB RAM, 7-core integrated GPU)",
+    "browser": "Google Chrome 150.0.7871.127",
+    "webgpu": true,
+    "shaderF16": true
+  },
+  "model": "onnx-community/Qwen3-0.6B-ONNX",
+  "dtype": "q4f16",
+  "modelTensorTransferMegabytes": 543,
+  "estimatedModelAndTokenizerMegabytes": 579,
+  "coldLoadMilliseconds": 53652,
+  "warmLoadMilliseconds": 10462,
+  "results": [
+    {
+      "prompt": "What do you do at Leonardo?",
+      "output": "At Leonardo, I develop and optimize real-time computer vision algorithms, contribute to infrared sensor-system design and performance analysis, and support threat detection and declaration through signal processing.",
+      "generationMilliseconds": 34355,
+      "guardAccepted": true
+    },
+    {
+      "prompt": "What do you do at EOC?",
+      "output": "At EOC, I clean and organize clinical databases and develop interactive tools for data entry and statistical analysis.",
+      "generationMilliseconds": 16443,
+      "guardAccepted": true
+    },
+    {
+      "prompt": "How does that complement your engineering work?",
+      "output": "This complements my engineering work by providing additional contributions to real-world applications, such as threat detection and data analysis, which aligns with my roles at Leonardo and EOC.",
+      "generationMilliseconds": 33602,
+      "guardAccepted": true
+    }
+  ]
+}

@@ -1,61 +1,180 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Interactive Portfolio Experience</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Explore Nicolò Pedrani's verified work in R&D engineering, data science and computational physics through an accessible room-based portfolio."
+    />
+    <meta name="theme-color" content="#102438" />
+    <meta property="og:title" content="Nicolò Pedrani · Interactive Portfolio" />
+    <meta property="og:description" content="A room-based portfolio for R&D engineering, data science and research." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://nicolopedrani.github.io/MyImmersiveExperience/" />
+    <link rel="canonical" href="https://nicolopedrani.github.io/MyImmersiveExperience/" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23102438'/%3E%3Cpath d='M7 23V8h4l5 8 5-8h4v15h-4V14l-5 8-5-8v9z' fill='%23f2c14e'/%3E%3C/svg%3E"
+    />
+    <title>Nicolò Pedrani · Interactive Portfolio</title>
   </head>
   <body>
-    <div
-      id="debug-panel"
-      style="
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        background: rgba(0, 0, 0, 0.8);
-        color: lime;
-        padding: 8px;
-        font-family: monospace;
-        font-size: 12px;
-        z-index: 1000;
-        border: 1px solid #333;
-        border-radius: 4px;
-      "
-    ></div>
+    <a class="skip-link" href="#room-stations">Skip to the room stations</a>
 
-    <!-- Controls Toggle Button (Desktop Only) -->
-    <button id="controls-toggle">📱 Show Controls</button>
-    
-    <!-- GameBoy-inspired full-screen layout -->
-    <div id="gameboy-container">
-      <div id="screen-area">
-        <canvas id="gameCanvas"></canvas>
-        <div id="status-bar">
-          <span id="status-text"></span>
-        </div>
-        
-        <!-- Initial Instructions (Desktop Only) -->
-        <div id="initial-instructions">
-          <h3>🎮 Welcome to Interactive CV</h3>
-          <p>Use <strong>Arrow Keys</strong> or <strong>WASD</strong> to move</p>
-          <p>Press <strong>SPACE</strong> to interact</p>
-          <p>Explore rooms to discover my experience!</p>
-          <div class="dismiss-hint">Click anywhere to dismiss</div>
-        </div>
+    <header class="site-header">
+      <a class="brand" href="#about" aria-label="Open Nicolò Pedrani's profile">
+        <span class="brand__mark" aria-hidden="true">NP</span>
+        <span><strong>Nicolò Pedrani</strong><small>Interactive portfolio</small></span>
+      </a>
+      <nav class="primary-nav" aria-label="Portfolio areas">
+        <button type="button" data-room="hub">Atrium</button>
+        <button type="button" data-room="work">Work</button>
+        <button type="button" data-room="research">Research</button>
+        <button type="button" data-room="beyond">Beyond</button>
+        <button type="button" data-open-chat>Chat</button>
+      </nav>
+      <div class="header-links">
+        <a id="resume-link" class="button button--gold" href="CV_Pedrani.pdf" download>Resume</a>
+        <a class="button button--quiet" href="https://nicolopedrani.github.io/">Main site</a>
       </div>
-      
-      <div id="controls-area">
-        <div id="touch-controls">
-          <button id="btn-up">▲</button>
-          <button id="btn-left">◀</button>
-          <button id="btn-action">●</button>
-          <button id="btn-right">▶</button>
-          <button id="btn-down">▼</button>
-        </div>
-      </div>
-    </div>
+    </header>
 
-    <script type="module" src="src/main.ts"></script>
+    <main id="main-content">
+      <section class="intro" aria-labelledby="intro-title">
+        <p class="eyebrow">Verified July 2026</p>
+        <h1 id="intro-title">Explore the systems behind the work.</h1>
+        <p>
+          Move through four personal pixel-art rooms, follow the guided route, or choose a station directly from the
+          panel. Every factual card comes from the current CV, reviewed profile, authored papers or an official source.
+        </p>
+        <div class="intro__actions">
+          <button id="start-tour" class="button button--gold" type="button">Start guided tour</button>
+          <button id="start-exploring" class="button button--quiet" type="button">Explore freely</button>
+        </div>
+      </section>
+
+      <section class="experience-shell" aria-label="Interactive portfolio world">
+        <div class="world-panel">
+          <div class="world-panel__heading">
+            <div>
+              <p class="eyebrow" id="room-kicker">Current room</p>
+              <h2 id="room-title">The Atrium</h2>
+            </div>
+            <p id="room-subtitle">Choose a path or start with the profile desk.</p>
+          </div>
+
+          <div class="canvas-frame">
+            <canvas
+              id="portfolio-world"
+              width="640"
+              height="416"
+              tabindex="0"
+              role="application"
+              aria-label="Interactive portfolio map. Use arrow keys or WASD to move and Space or Enter to interact."
+              aria-describedby="world-help"
+            >
+              This interactive map requires canvas. Use the room and station buttons to access the same content.
+            </canvas>
+            <p id="world-help" class="sr-only">
+              Use arrow keys or WASD to move. Press Space or Enter while facing a highlighted station. Use the area
+              buttons above and the station navigator beside the map if you prefer not to navigate spatially.
+            </p>
+            <div class="world-status" role="status" aria-live="polite">
+              <span class="world-status__signal" aria-hidden="true"></span>
+              <span id="status-text">Use Arrow keys or WASD to move. Press Space to interact.</span>
+            </div>
+          </div>
+
+          <div class="touch-controls" aria-label="Map controls">
+            <button type="button" data-direction="up" aria-label="Move up">↑</button>
+            <button type="button" data-direction="left" aria-label="Move left">←</button>
+            <button type="button" id="touch-interact" aria-label="Interact with the station in front of you">Interact</button>
+            <button type="button" data-direction="right" aria-label="Move right">→</button>
+            <button type="button" data-direction="down" aria-label="Move down">↓</button>
+          </div>
+
+          <div id="tour-controls" class="tour-controls" hidden>
+            <p><strong id="tour-progress">Stop 1 of 8</strong> <span id="tour-label">Profile</span></p>
+            <div>
+              <button id="tour-next" class="button button--gold" type="button">Next stop</button>
+              <button id="tour-stop" class="button button--quiet" type="button">End tour</button>
+            </div>
+          </div>
+        </div>
+
+        <aside id="detail-panel" class="detail-panel" aria-labelledby="detail-title">
+          <nav id="room-stations" class="room-stations" aria-labelledby="room-stations-title" tabindex="-1">
+            <p class="eyebrow">Direct access</p>
+            <h2 id="room-stations-title">Stations in this room</h2>
+            <div id="room-station-buttons"></div>
+          </nav>
+          <p class="eyebrow" id="detail-eyebrow">Start here</p>
+          <h2 id="detail-title">Choose a station</h2>
+          <p id="detail-summary">
+            Walk up to a labelled station and press Space, select it on the map, or use the buttons above.
+          </p>
+          <div id="detail-body"></div>
+        </aside>
+      </section>
+    </main>
+
+    <footer>
+      <p>Designed and built by Nicolò Pedrani. Content last reviewed July 2026.</p>
+      <p><a href="https://github.com/nicolopedrani/MyImmersiveExperience">Source</a> · <a href="#chat">Portfolio guide</a></p>
+    </footer>
+
+    <dialog id="chat-dialog" class="chat-dialog" aria-labelledby="chat-title">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Browser-side conversation</p>
+          <h2 id="chat-title">Portfolio guide</h2>
+        </div>
+        <button id="chat-close" class="icon-button" type="button" aria-label="Close conversation">×</button>
+      </div>
+      <p class="dialog-intro">
+        This is an interactive avatar of Nicolò's reviewed portfolio, not Nicolò himself. Local Qwen generates grounded
+        answers on compatible devices; curated answers remain available without a model.
+      </p>
+      <div class="chat-toolbar">
+        <button id="chat-mode-button" class="button button--quiet" type="button" aria-pressed="false">Enable local Qwen</button>
+        <button id="model-cache-clear" class="text-button" type="button">Clear model cache</button>
+      </div>
+      <p id="model-status" class="model-status" aria-live="polite">Curated answers are active.</p>
+      <ol id="chat-messages" class="chat-messages" aria-live="polite"></ol>
+      <div id="chat-suggestions" class="chat-suggestions" aria-label="Suggested questions"></div>
+      <form id="chat-form" class="chat-form">
+        <label for="chat-input">Ask about the portfolio</label>
+        <div>
+          <input id="chat-input" name="question" autocomplete="off" maxlength="280" required />
+          <button class="button button--gold" type="submit">Send</button>
+          <button id="chat-cancel" class="button button--quiet" type="button" hidden>Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="model-consent-dialog" class="consent-dialog" aria-labelledby="consent-title">
+      <p class="eyebrow">Optional generative chat</p>
+      <h2 id="consent-title">Download approximately 579 MB?</h2>
+      <p>
+        Qwen3 0.6B will run with WebGPU in a Web Worker and generate answers from verified portfolio context. Your
+        questions are not sent to a model API. Apache-2.0 model files are downloaded from Hugging Face and retained in
+        the browser cache until you clear them.
+      </p>
+      <p id="model-capability-detail" class="model-status" aria-live="polite">Checking this device…</p>
+      <div id="model-progress-container" class="model-progress" hidden>
+        <div class="model-progress__summary">
+          <span>Local Qwen download</span>
+          <output id="model-progress-label" for="model-progress">0%</output>
+        </div>
+        <progress id="model-progress" max="100" value="0" aria-label="Local Qwen model download progress">0%</progress>
+      </div>
+      <div class="dialog-actions">
+        <button id="model-consent-confirm" class="button button--gold" type="button" disabled>Download and enable</button>
+        <button id="model-consent-cancel" class="button button--quiet" type="button">Keep curated answers</button>
+      </div>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
