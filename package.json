@@ -1,19 +1,47 @@
 {
   "name": "myimmersiveexperience",
   "version": "1.0.0",
-  "description": "Interactive Portfolio Game with AI-powered conversations",
+  "description": "An accessible pixel-art portfolio with grounded local Qwen chat",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "benchmark:qwen": "node scripts/benchmark-qwen.mjs",
+    "audit": "npm audit --audit-level=high",
     "build": "vite build",
+    "verify:dist": "node scripts/verify-dist.mjs",
     "preview": "vite preview",
-    "deploy": "./deploy.sh"
+    "check": "npm run typecheck && npm run lint && npm run test && npm run audit && npm run build && npm run verify:dist"
   },
-  "keywords": ["portfolio", "game", "ai", "typescript"],
-  "author": "Nicolo Pedrani",
+  "keywords": [
+    "portfolio",
+    "game",
+    "ai",
+    "typescript"
+  ],
+  "author": "Nicolò Pedrani",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^24.1.0",
-    "vite": "^7.0.6"
+    "@axe-core/playwright": "4.12.1",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.61.1",
+    "@types/node": "26.1.1",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "10.7.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.64.0",
+    "vite": "8.1.5",
+    "vitest": "4.1.10"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "4.2.0"
+  },
+  "overrides": {
+    "adm-zip": "0.6.0"
   }
 }

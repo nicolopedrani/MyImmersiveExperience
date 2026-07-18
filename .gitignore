@@ -1,8 +1,19 @@
-# .gitignore
+# Dependencies and generated output
+node_modules/
 dist/
+coverage/
+playwright-report/
+test-results/
+
+# Local editor and operating-system files
+.vscode/
+.DS_Store
+
+# Private source material: never publish or bundle
+references/
+
+# Legacy local workspaces
 javascript-code/
 All_Assets/
-.vscode/
-assets_inventory.txt
-.DS_Store
 Bugs/
+assets_inventory.txt
